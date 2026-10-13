@@ -108,13 +108,12 @@ function botReducer(state: BotState, action: BotAction): BotState {
         const idx = gs.players.findIndex((p) => p.id === gs.currentPlayerId);
         gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
       } else {
-        // check if any legal move exists; if not, auto-advance
+        // check if any legal move exists
         const cur = gs.players.find((p) => p.id === gs.currentPlayerId)!;
         const legal = legalTokenIds(cur, action.result);
         if (legal.length === 0) {
-          gs.dice = null;
-          const idx = gs.players.findIndex((p) => p.id === gs.currentPlayerId);
-          gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
+          // If it's human, we keep dice visible briefly so they understand why turn passed
+          gs.dice = action.result;
         }
       }
       return { ...state, gameState: gs };
@@ -137,6 +136,7 @@ function botReducer(state: BotState, action: BotAction): BotState {
       gs.dice = null;
       const idx = gs.players.findIndex((p) => p.id === gs.currentPlayerId);
       gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
+      gs.consecutiveSixes = 0;
       return { ...state, gameState: gs };
     }
     default:
@@ -227,6 +227,20 @@ function Board({
     return map;
   }, [players]);
 
+  // Home stretch tokens (positions 53, 54, 55)
+  const laneTokens = useMemo(() => {
+    const map = new Map<string, { player: Player; token: Token }[]>();
+    players.forEach((p) => {
+      p.tokens.forEach((token) => {
+        if (token.position >= 53 && token.position <= 55) {
+          const key = `${p.color}-${token.position}`;
+          map.set(key, [...(map.get(key) ?? []), { player: p, token }]);
+        }
+      });
+    });
+    return map;
+  }, [players]);
+
   // Home tokens (position 56)
   const homeTokens = useMemo(() => {
     const map = new Map<string, Token[]>();
@@ -293,6 +307,35 @@ function Board({
             })}
           </div>
         </div>
+
+        {/* Home runway cells (positions 53-55) */}
+        {(["red", "green", "yellow", "blue"] as Color[]).map((color) => {
+          return [53, 54, 55].map((pos) => {
+            const list = laneTokens.get(`${color}-${pos}`) ?? [];
+            return (
+              <div
+                key={`${color}-${pos}`}
+                className={`track-cell lane-${color}-${pos} safe-cell`}
+              >
+                {list.map(({ player, token }) => {
+                  const isLegal =
+                    player.id === currentPlayerId && legalIds.includes(token.id);
+                  return (
+                    <button
+                      key={`${player.id}-${token.id}`}
+                      className={`token-3d ${player.color}${isLegal ? " legal" : ""}`}
+                      onClick={() => isLegal && onMove(token.id)}
+                      aria-label={`${player.name} token ${token.id + 1}`}
+                      title={isLegal ? "Move this token!" : undefined}
+                    >
+                      {token.id + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          });
+        })}
 
         {/* Track cells */}
         {TRACK_PATH.map((cell) => {
@@ -369,6 +412,17 @@ function BotGame({ onExit }: { onExit: () => void }) {
       return () => clearTimeout(t);
     }
   }, [isBot, gs.currentPlayerId, gs.dice, phase]);
+
+  // Human auto-advance when no legal moves
+  useEffect(() => {
+    if (!isMyTurn || phase === "finished" || gs.dice === null) return;
+    if (legal.length === 0) {
+      const t = setTimeout(() => {
+        dispatch({ type: "ADVANCE" });
+      }, 1200);
+      return () => clearTimeout(t);
+    }
+  }, [isMyTurn, phase, gs.dice, legal.length]);
 
   const currentPlayer = gs.players.find((p) => p.id === gs.currentPlayerId);
   const winner = phase === "finished" ? gs.players.find((p) => p.id === gs.winnerId) : null;

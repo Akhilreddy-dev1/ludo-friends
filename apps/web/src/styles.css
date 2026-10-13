@@ -727,6 +727,23 @@ label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .cell-51 { left:68%; top:44%; }
 .cell-52 { left:62%; top:44%; }
 
+/* ── Home stretch runway positions (53-55) ── */
+.lane-red-53    { left: 38%; top: 37%; background: rgba(241,91,98,0.3); border-color: rgba(241,91,98,0.6); }
+.lane-red-54    { left: 44%; top: 37%; background: rgba(241,91,98,0.3); border-color: rgba(241,91,98,0.6); }
+.lane-red-55    { left: 47%; top: 37%; background: rgba(241,91,98,0.3); border-color: rgba(241,91,98,0.6); }
+
+.lane-green-53  { left: 59%; top: 38%; background: rgba(78,203,128,0.3); border-color: rgba(78,203,128,0.6); }
+.lane-green-54  { left: 59%; top: 44%; background: rgba(78,203,128,0.3); border-color: rgba(78,203,128,0.6); }
+.lane-green-55  { left: 59%; top: 47%; background: rgba(78,203,128,0.3); border-color: rgba(78,203,128,0.6); }
+
+.lane-yellow-53 { left: 59%; top: 59%; background: rgba(245,200,66,0.3); border-color: rgba(245,200,66,0.6); }
+.lane-yellow-54 { left: 53%; top: 59%; background: rgba(245,200,66,0.3); border-color: rgba(245,200,66,0.6); }
+.lane-yellow-55 { left: 50%; top: 59%; background: rgba(245,200,66,0.3); border-color: rgba(245,200,66,0.6); }
+
+.lane-blue-53   { left: 37%; top: 59%; background: rgba(94,157,255,0.3); border-color: rgba(94,157,255,0.6); }
+.lane-blue-54   { left: 37%; top: 53%; background: rgba(94,157,255,0.3); border-color: rgba(94,157,255,0.6); }
+.lane-blue-55   { left: 37%; top: 50%; background: rgba(94,157,255,0.3); border-color: rgba(94,157,255,0.6); }
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
   .menu-cards { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
