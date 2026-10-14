@@ -36,7 +36,6 @@ export class RoomManager {
   join(socketId: string, code: string, name: string): Room {
     const room = this.rooms.get(code.toUpperCase());
     if (!room) throw new Error("Room not found");
-    if (room.state.phase !== "lobby") throw new Error("This game has already started");
     if (room.state.players.length >= 4) throw new Error("Room is full");
     const color = COLORS.find(
       (candidate) =>
@@ -54,26 +53,13 @@ export class RoomManager {
   remove(socketId: string): Room | undefined {
     const room = this.getBySocket(socketId);
     if (!room) return undefined;
-    const currentIndex = room.state.players.findIndex(
+    const player = room.state.players.find(
       (candidate) => candidate.id === socketId,
     );
-    const wasCurrent = room.state.currentPlayerId === socketId;
-    const nextPlayer = wasCurrent
-      ? [...room.state.players.slice(currentIndex + 1), ...room.state.players.slice(0, currentIndex)].find(
-          (candidate) => candidate.id !== socketId,
-        )
-      : undefined;
-    room.state.players = room.state.players.filter(
-      (candidate) => candidate.id !== socketId,
-    );
+    if (player) player.connected = false;
     this.socketRooms.delete(socketId);
-    if (room.hostId === socketId) room.hostId = room.state.players[0]?.id ?? "";
-    if (wasCurrent && room.state.phase === "playing") {
-      room.state.dice = null;
-      room.state.consecutiveSixes = 0;
-      room.state.currentPlayerId = nextPlayer?.id ?? room.state.players[0]?.id ?? null;
-    }
-    if (room.state.players.length === 0) this.rooms.delete(room.code);
+    if (room.state.players.every((candidate) => !candidate.connected))
+      this.rooms.delete(room.code);
     return room;
   }
   snapshot(room: Room): RoomSnapshot {
@@ -107,7 +93,9 @@ export class RoomManager {
     player.ready = ready;
     if (
       room.state.players.length >= 2 &&
-      room.state.players.every((candidate) => candidate.ready)
+      room.state.players.every(
+        (candidate) => candidate.ready && candidate.connected,
+      )
     ) {
       room.state.phase = "playing";
       room.state.currentPlayerId = room.state.players[0].id;
