@@ -837,8 +837,34 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 
 // ─── Main Menu ────────────────────────────────────────────────────────────────
 function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+        window.matchMedia("(pointer: coarse)").matches || navigator.hardwareConcurrency <= 2) return;
+    let frame = 0;
+    const pointer = (event: PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const bounds = root.getBoundingClientRect();
+        const x = Math.max(-1, Math.min(1, (event.clientX - bounds.left) / bounds.width * 2 - 1));
+        const y = Math.max(-1, Math.min(1, (event.clientY - bounds.top) / bounds.height * 2 - 1));
+        root.style.setProperty("--tilt-x", `${x * 2}deg`);
+        root.style.setProperty("--tilt-y", `${-y * 2}deg`);
+      });
+    };
+    const scroll = () => root.style.setProperty("--scroll-lift", `${Math.max(-16, Math.min(10, window.scrollY * 0.025))}px`);
+    window.addEventListener("pointermove", pointer, { passive: true });
+    window.addEventListener("scroll", scroll, { passive: true });
+    scroll();
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", pointer);
+      window.removeEventListener("scroll", scroll);
+    };
+  }, []);
   return (
-    <div className="menu-root">
+    <div className="menu-root" ref={rootRef}>
       <div className="menu-bg">
         <div className="floating-token t1">🔴</div>
         <div className="floating-token t2">🟢</div>
