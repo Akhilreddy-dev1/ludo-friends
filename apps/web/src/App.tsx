@@ -892,15 +892,17 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
           <div className="landing-center">✦</div>
           <span className="landing-token token-a">●</span><span className="landing-token token-b">●</span>
           <span className="landing-token token-c">●</span><span className="landing-token token-d">●</span>
+          <span className="landing-die die-red" aria-hidden="true">⚅</span>
+          <span className="landing-die die-green" aria-hidden="true">⚄</span>
         </div>
         <div className="menu-cards">
-          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect("bot"); }} onClick={() => onSelect("bot")}>
+          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect("bot"); } }} onClick={() => onSelect("bot")}>
             <div className="menu-card-icon">🤖</div>
             <h3>Play vs Bots</h3>
             <p>Face 3 AI opponents. No friends needed — we got you!</p>
             <span className="btn-primary card-cta">Play vs Bots →</span>
           </div>
-          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect("multiplayer"); }} onClick={() => onSelect("multiplayer")}>
+          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect("multiplayer"); } }} onClick={() => onSelect("multiplayer")}>
             <div className="menu-card-icon">🌐</div>
             <h3>Multiplayer</h3>
             <p>Create or join a room. Play with 2–4 friends online.</p>
