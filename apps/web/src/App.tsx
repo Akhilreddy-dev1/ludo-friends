@@ -436,6 +436,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
     <div className="game-root">
       <header className="game-header">
         <button className="btn-ghost btn-sm" onClick={onExit}>← Exit</button>
+        <div className="game-brand"><span>🎲</span><strong>LUDO<span>FRIENDS</span></strong></div>
         <div className="turn-info">
           <span className={`turn-dot ${currentPlayer?.color}`} />
           <span><small>{isMyTurn ? "YOUR TURN" : "NOW PLAYING"}</small><strong>{isMyTurn ? "Your move" : `${currentPlayer?.name}'s turn`}</strong></span>
@@ -463,6 +464,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
 
       <div className="game-layout">
         <div className="board-container">
+          <div className="board-heading"><div><span className="eyebrow">CLASSIC LUDO</span><h2>Race to home</h2></div><span className="board-pill">4 tokens · Safe tiles</span></div>
           <Board
             players={gs.players}
             currentPlayerId={gs.currentPlayerId}
@@ -757,6 +759,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     <div className="game-root">
       <header className="game-header">
         <button className="btn-ghost btn-sm" onClick={onExit}>← Exit</button>
+        <div className="game-brand"><span>🎲</span><strong>LUDO<span>FRIENDS</span></strong></div>
         <div className="turn-info">
           <span className={`turn-dot ${currentPlayer?.color}`} />
           <span><small>{current ? "YOUR TURN" : "NOW PLAYING"}</small><strong>{current ? "Your move" : `${currentPlayer?.name}'s turn`}</strong></span>
@@ -784,6 +787,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 
       <div className="game-layout">
         <div className="board-container">
+          <div className="board-heading"><div><span className="eyebrow">PRIVATE ROOM · {snapshot.code}</span><h2>Race to home</h2></div><span className="board-pill">2–4 players · Safe tiles</span></div>
           <Board
             players={snapshot.state.players}
             currentPlayerId={snapshot.state.currentPlayerId}
