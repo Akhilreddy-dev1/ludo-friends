@@ -848,5 +848,31 @@ button { min-height: 44px; }
 .event-toast:not(:empty) { opacity:1; transform:translate(-50%,0); }
 @media (max-width:900px) { .game-layout { grid-template-columns:1fr; align-items:start; }.controls-panel { position:static; order:-1; width:min(680px,100%); margin:0 auto; display:grid; grid-template-columns:auto 1fr; align-items:center; }.controls-panel .panel-heading { grid-column:1/-1; }.controls-panel .dice-3d { grid-row:2/4; }.scoreboard-full { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }.scoreboard-full .section-label { grid-column:1/-1; } }
 @media (max-width:600px) { .game-header { flex-wrap:wrap; }.turn-info { order:0; min-width:calc(100% - 90px); }.room-code-mini { order:2; margin-left:auto; }.game-header .timer-badge { order:1; margin-left:auto; }.game-header>button:last-child { order:3; }.game-layout { padding:12px; gap:14px; }.board-container { padding:8px; border-radius:20px; }.board-3d { border-width:4px; border-radius:16px; }.controls-panel { grid-template-columns:82px 1fr; padding:17px; border-radius:20px; }.controls-panel .dice-3d { width:68px;height:68px; }.controls-panel .dice-face { font-size:40px; }.scoreboard-full { grid-template-columns:1fr; }.event-toast { top:118px; white-space:nowrap; } }
+.game-root { color:#f8f5ed; background:radial-gradient(ellipse at 50% -12%,#29465b 0,#172838 36%,#111a26 78%); }
+.game-header { color:#f8f5ed; background:rgba(12,22,32,.92); border-bottom:1px solid rgba(255,255,255,.12); box-shadow:0 12px 34px rgba(0,0,0,.22); }
+.game-header .btn-ghost { color:#d7e0e7; border-color:rgba(255,255,255,.18); }
+.game-header .btn-ghost:hover { color:white; border-color:rgba(255,255,255,.42); background:rgba(255,255,255,.08); }
+.game-brand { display:flex; align-items:center; gap:8px; white-space:nowrap; color:white; }
+.game-brand>span { display:grid; place-items:center; width:34px;height:34px;border-radius:12px;background:linear-gradient(145deg,#fff6de,#efc467);font-size:19px;box-shadow:0 5px 16px rgba(236,186,78,.2); }
+.game-brand strong { font-size:12px; letter-spacing:.12em; }
+.game-brand strong span { color:#efc467; }
+.turn-info small { color:#9fb2c1; }
+.turn-info strong { color:#fff; }
+.timer-badge,.room-code-mini { color:#fff; border-color:rgba(255,255,255,.14); background:rgba(255,255,255,.07); }
+.timer-badge>span,.room-code-mini>span { color:#a8bbc9; }
+.timer-badge strong,.room-code-mini strong { color:#ffe09a; }
+.game-layout { align-items:stretch; }
+.board-container { flex-direction:column; align-items:center; justify-content:flex-start; gap:14px; padding:clamp(14px,2.2vw,26px); border-color:rgba(255,255,255,.12); background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.035)); box-shadow:0 28px 80px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.11); }
+.board-heading { width:100%; max-width:680px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; padding:2px 4px 0; }
+.board-heading .eyebrow { color:#9fb2c1; font-size:9px; }
+.board-heading h2 { color:#fff; font-size:clamp(20px,3vw,28px); text-transform:capitalize; letter-spacing:-.035em; }
+.board-pill { flex:none; padding:8px 11px; border:1px solid rgba(255,255,255,.14); border-radius:99px; color:#d0dce4; background:rgba(255,255,255,.07); font-size:10px; font-weight:800; }
+.board-3d { box-shadow:0 32px 54px rgba(0,0,0,.42),0 6px 0 #cfc1a5,inset 0 0 0 1px rgba(116,95,61,.13); }
+.controls-panel { align-self:center; }
+.controls-panel .panel-heading .eyebrow { color:#927638; }
+.controls-panel .hint-text { color:#423a2b; }
+.score-name { color:#28313d; }
+@media (max-width:900px) { .game-brand { margin-right:auto; }.board-container { width:100%; }.controls-panel { align-self:stretch; } }
+@media (max-width:600px) { .game-brand { order:0; }.game-header .btn-ghost:first-child { order:0; }.board-heading { align-items:flex-start; flex-direction:column; }.board-pill { padding:6px 9px; }.game-layout { padding-top:16px; }.game-header .turn-info { order:1; }.game-header .timer-badge { order:2; }.game-header .room-code-mini { order:3; margin-left:0; }.game-header>button:last-child { order:4; margin-left:auto; } }
 
 
