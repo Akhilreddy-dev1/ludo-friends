@@ -8,15 +8,18 @@ export interface RoomSnapshot {
 }
 export interface ClientToServerEvents {
   createRoom: (
-    payload: { name: string; turnSeconds?: number },
+    payload: { name: string; sessionId: string; turnSeconds?: number },
     ack: Ack<{ code: string }>,
   ) => void;
   joinRoom: (
-    payload: { code: string; name: string },
+    payload: { code: string; name: string; sessionId: string },
     ack: Ack<{ code: string }>,
   ) => void;
   selectColor: (payload: { color: Color }, ack: Ack<null>) => void;
   setReady: (payload: { ready: boolean }, ack: Ack<null>) => void;
+  startGame: (ack: Ack<null>) => void;
+  resumeSession: (payload: { sessionId: string }, ack: Ack<null>) => void;
+  playAgain: (ack: Ack<null>) => void;
   rollDice: (ack: Ack<null>) => void;
   moveToken: (payload: { tokenId: number }, ack: Ack<null>) => void;
   leaveRoom: (ack: Ack<null>) => void;
@@ -30,3 +33,5 @@ export type Ack<T> = (
     | { ok: true; data: T }
     | { ok: false; error: { code: string; message: string } },
 ) => void;
+
+
