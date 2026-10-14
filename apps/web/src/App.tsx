@@ -8,6 +8,7 @@ import {
   moveToken as coreMove,
   createGameState,
   createPlayer,
+  isLegalMove,
   type Color,
   type Player,
   type GameState,
@@ -186,12 +187,7 @@ function Dice3D({
 }
 
 // ─── Board component ─────────────────────────────────────────────────────────
-const TRACK_COORDS: readonly [number, number][] = [[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[14,7],[14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14],[6,14],[6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],[0,7],[0,6]];
 const TRACK_PATH = Array.from({ length: 52 }, (_, i) => i + 1);
-const HOME_LANE_COORDS: Record<Color, readonly [number, number][]> = {
-  red: [[3, 7], [4, 7], [5, 7]], green: [[7, 3], [7, 4], [7, 5]],
-  yellow: [[11, 7], [10, 7], [9, 7]], blue: [[7, 11], [7, 10], [7, 9]],
-};
 
 function Board({
   players,
@@ -319,7 +315,7 @@ function Board({
             return (
               <div
                 key={`${color}-${pos}`}
-                className="track-cell safe-cell" style={{ left: `${HOME_LANE_COORDS[color][pos - 53][0] * 100 / 15}%`, top: `${HOME_LANE_COORDS[color][pos - 53][1] * 100 / 15}%` }}
+                className={`track-cell lane-${color}-${pos} safe-cell`}
               >
                 {list.map(({ player, token }) => {
                   const isLegal =
@@ -348,7 +344,7 @@ function Board({
           return (
             <div
               key={cell}
-              className={`track-cell${isSafe ? " safe-cell" : ""}`} style={{ left: `${TRACK_COORDS[cell - 1][0] * 100 / 15}%`, top: `${TRACK_COORDS[cell - 1][1] * 100 / 15}%` }}
+              className={`track-cell cell-${cell}${isSafe ? " safe-cell" : ""}`}
             >
               {isSafe && <span className="safe-star">⭐</span>}
               {tokensOnCell.map(({ player, token }) => {
@@ -554,12 +550,6 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
       else setError("");
     });
 
-  // Hooks run before every conditional screen return to keep their order stable.
-  const legal = useMemo(() => {
-    const roll = snapshot?.state.dice;
-    return me && roll ? legalTokenIds(me, roll) : [];
-  }, [me, snapshot?.state.dice]);
-
   if (!snapshot) {
     return (
       <div className="entry-screen">
@@ -670,6 +660,10 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 
   // Playing
   const current = snapshot.state.currentPlayerId === me?.id;
+  const legal = useMemo(() => {
+    const roll = snapshot.state.dice;
+    return me && roll ? legalTokenIds(me, roll) : [];
+  }, [me, snapshot.state.dice]);
 
   const doRoll = () => {
     if (!current || snapshot.state.dice !== null || rolling) return;
@@ -778,18 +772,7 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
         <div className="logo-section">
           <div className="logo-dice">🎲</div>
           <h1 className="logo-title">LUDO<span>FRIENDS</span></h1>
-          <p className="logo-sub">A little luck. A lot of friendly rivalry.</p>
-          <div className="landing-pills"><span>2–4 players</span><span>Instant rooms</span><span>Play solo with bots</span></div>
-        </div>
-        <div className="landing-board" aria-hidden="true">
-          <div className="landing-orbit orbit-red"><i /><i /><i /><i /></div>
-          <div className="landing-orbit orbit-green"><i /><i /><i /><i /></div>
-          <div className="landing-orbit orbit-yellow"><i /><i /><i /><i /></div>
-          <div className="landing-orbit orbit-blue"><i /><i /><i /><i /></div>
-          <div className="landing-route route-a" /><div className="landing-route route-b" />
-          <div className="landing-center">✦</div>
-          <span className="landing-token token-a">●</span><span className="landing-token token-b">●</span>
-          <span className="landing-token token-c">●</span><span className="landing-token token-d">●</span>
+          <p className="logo-sub">Roll. Race. Reunite.</p>
         </div>
         <div className="menu-cards">
           <div className="menu-card card-3d" onClick={() => onSelect("bot")}>
