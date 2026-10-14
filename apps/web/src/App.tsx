@@ -19,7 +19,8 @@ import type {
   ServerToClientEvents,
 } from "@ludo/shared";
 
-const SERVER = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
+const SERVER_CONFIGURED = Boolean(import.meta.env.VITE_SERVER_URL) || import.meta.env.DEV;
+const SERVER = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 type Mode = "menu" | "bot" | "multiplayer";
 
@@ -514,23 +515,54 @@ function BotGame({ onExit }: { onExit: () => void }) {
 // ─── Multiplayer Game ────────────────────────────────────────────────────────
 function MultiplayerEntry({ onExit }: { onExit: () => void }) {
   const [socket] = useState<AppSocket>(() => io(SERVER, { autoConnect: false }));
+  const [sessionId] = useState(() => {
+    const key = "ludo-friends-session";
+    let saved = window.localStorage.getItem(key);
+    if (!saved) { saved = crypto.randomUUID(); window.localStorage.setItem(key, saved); }
+    return saved;
+  });
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [seconds, setSeconds] = useState(0);
   const [rolling, setRolling] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [connection, setConnection] = useState("Connecting…");
+  const [toast, setToast] = useState("");
+  const [soundOn, setSoundOn] = useState(true);
+  const previousSnapshot = useRef<RoomSnapshot | null>(null);
   const me = snapshot?.state.players.find((p) => p.id === socket.id);
 
   useEffect(() => {
-    socket.connect();
+    if (!SERVER_CONFIGURED) {
+      setConnection("Multiplayer server is not configured yet. Set the VITE_SERVER_URL repository variable.");
+      return () => socket.disconnect();
+    }
     socket.on("snapshot", setSnapshot);
-    socket.on("error", (e) => setError(e.message));
+    const onError = (e: { message: string }) => setError(e.message);
+    const onConnect = () => {
+      setConnection(""); setError("");
+      socket.emit("resumeSession", { sessionId }, (result) => {
+        if (result.ok) setConnection("Room restored.");
+      });
+    };
+    const onDisconnect = () => setConnection("Connection lost. Reconnecting…");
+    const onConnectError = () => setConnection("Server unavailable. Check the multiplayer server and try again.");
+    socket.on("error", onError);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    socket.connect();
     return () => {
       socket.off("snapshot", setSnapshot);
+      socket.off("error", onError);
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
       socket.disconnect();
     };
-  }, [socket]);
+  }, [socket, sessionId]);
 
   useEffect(() => {
     if (!snapshot?.state.turnDeadline) return;
@@ -543,16 +575,48 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     return () => clearInterval(t);
   }, [snapshot?.state.turnDeadline]);
 
-  const create = () =>
-    socket.emit("createRoom", { name, turnSeconds: 20 }, (r) => {
-      if (!r.ok) setError(r.error.message);
-      else setError("");
+  useEffect(() => {
+    if (!snapshot) return;
+    const previous = previousSnapshot.current;
+    let message = "";
+    if (previous && snapshot.state.dice === 6 && previous.state.dice !== 6) message = "Rolled a 6!";
+    if (previous && snapshot.state.players.some((player) => player.connected === false && previous.state.players.find((old) => old.id === player.id)?.connected !== false)) message = "Player disconnected";
+    if (previous && snapshot.state.players.some((player) => player.tokens.some((token) => token.position === 0 && (previous.state.players.find((old) => old.id === player.id)?.tokens.find((old) => old.id === token.id)?.position ?? 0) > 0))) message = "Token captured!";
+    previousSnapshot.current = snapshot;
+    if (!message) return;
+    setToast(message);
+    const timeout = window.setTimeout(() => setToast(""), 2400);
+    if (soundOn && snapshot.state.dice !== null) {
+      try {
+        const AudioContextClass = window.AudioContext;
+        const context = new AudioContextClass();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.frequency.value = snapshot.state.dice === 6 ? 880 : 540;
+        gain.gain.setValueAtTime(0.06, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.12);
+        oscillator.connect(gain); gain.connect(context.destination);
+        oscillator.start(); oscillator.stop(context.currentTime + 0.12);
+        oscillator.onended = () => void context.close();
+      } catch { /* Audio is an optional enhancement. */ }
+    }
+    return () => window.clearTimeout(timeout);
+  }, [snapshot, soundOn]);
+
+  const create = () => {
+    if (busy || !socket.connected) { setError("Waiting for the game server connection."); return; }
+    setBusy(true);
+    socket.emit("createRoom", { name, sessionId, turnSeconds: 20 }, (r) => {
+      setBusy(false); if (!r.ok) setError(r.error.message); else setError("");
     });
-  const join = () =>
-    socket.emit("joinRoom", { code, name }, (r) => {
-      if (!r.ok) setError(r.error.message);
-      else setError("");
+  };
+  const join = () => {
+    if (busy || !socket.connected) { setError("Waiting for the game server connection."); return; }
+    setBusy(true);
+    socket.emit("joinRoom", { code, name, sessionId }, (r) => {
+      setBusy(false); if (!r.ok) setError(r.error.message); else setError("");
     });
+  };
 
   // Hooks run before every conditional screen return to keep their order stable.
   const legal = useMemo(() => {
@@ -576,7 +640,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
               maxLength={24}
             />
           </label>
-          <button className="btn-primary" disabled={!name.trim()} onClick={create}>
+          <button className="btn-primary" disabled={!name.trim() || busy || !socket.connected} onClick={create}>
             🏠 Create a Room
           </button>
           <div className="divider">or join with code</div>
@@ -590,13 +654,14 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
             />
             <button
               className="btn-primary"
-              disabled={!name.trim() || code.length !== 6}
+              disabled={!name.trim() || code.length !== 6 || busy || !socket.connected}
               onClick={join}
             >
               Join
             </button>
           </div>
           {error && <p className="error-msg">{error}</p>}
+          {connection && <p className="hint-text" role="status">{connection}</p>}
         </div>
       </div>
     );
@@ -617,15 +682,16 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
           </div>
           <button
             className="btn-ghost btn-sm"
-            onClick={() => navigator.clipboard?.writeText(snapshot.code)}
+            onClick={() => navigator.clipboard?.writeText(snapshot.code).then(() => setError("Room code copied.")).catch(() => setError("Could not copy. Select the room code to copy it."))}
           >
             📋 Copy
           </button>
+          <button className="btn-ghost btn-sm" onClick={() => { const invite = `${window.location.origin}${window.location.pathname} room code: ${snapshot.code}`; window.open(`https://wa.me/?text=${encodeURIComponent(invite)}`, "_blank", "noopener,noreferrer"); }}>Share</button>
         </header>
         <div className="entry-card card-3d">
           <p className="eyebrow">LOBBY • {snapshot.state.players.length}/4 players</p>
           <h2>Choose your color</h2>
-          <p className="hint-text">All players must be ready to start.</p>
+          <p className="hint-text">Everyone marks ready; the host starts when the room is set.</p>
           <div className="players-list">
             {snapshot.state.players.map((p) => (
               <div key={p.id} className="player-row">
@@ -657,11 +723,13 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
           <button
             className={`btn-primary ready-btn${me?.ready ? " is-ready" : ""}`}
             onClick={() =>
-              socket.emit("setReady", { ready: !me?.ready }, () => undefined)
+              socket.emit("setReady", { ready: !me?.ready }, (r) => { if (!r.ok) setError(r.error.message); })
             }
           >
             {me?.ready ? "✓ Ready!" : "Ready Up"}
           </button>
+          {me?.id === snapshot.hostId && <button className="btn-secondary ready-btn" disabled={snapshot.state.players.length < 2 || snapshot.state.players.some((p) => !p.ready || !p.connected)} onClick={() => socket.emit("startGame", (r) => { if (!r.ok) setError(r.error.message); })}>Start Game</button>}
+          <button className="btn-ghost btn-sm" onClick={() => socket.emit("leaveRoom", () => onExit())}>Leave room</button>
           {error && <p className="error-msg">{error}</p>}
         </div>
       </div>
@@ -676,7 +744,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     setRolling(true);
     setTimeout(() => {
       setRolling(false);
-      socket.emit("rollDice", () => undefined);
+      socket.emit("rollDice", (r) => { if (!r.ok) setError(r.error.message); });
     }, 700);
   };
 
@@ -693,7 +761,9 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
           <span>{current ? "Your Turn!" : `${currentPlayer?.name}'s turn`}</span>
         </div>
         <div className="timer-badge">{seconds}s</div>
+        <button className="btn-ghost btn-sm" aria-label={soundOn ? "Turn sound off" : "Turn sound on"} onClick={() => setSoundOn((enabled) => !enabled)}>{soundOn ? "🔊" : "🔇"}</button>
       </header>
+      <div className="event-toast" role="status" aria-live="polite">{toast}</div>
 
       {snapshot.state.winnerId && (
         <div className="winner-banner">
@@ -704,7 +774,8 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                 ? "You Win!"
                 : `${snapshot.state.players.find((p) => p.id === snapshot.state.winnerId)?.name} Wins!`}
             </h2>
-            <button className="btn-primary" onClick={onExit}>Back to Menu</button>
+            <button className="btn-primary" onClick={() => socket.emit("leaveRoom", () => onExit())}>Leave</button>
+            {me?.id === snapshot.hostId && <button className="btn-secondary" onClick={() => socket.emit("playAgain", (r) => { if (!r.ok) setError(r.error.message); })}>Play Again</button>}
           </div>
         </div>
       )}
@@ -717,7 +788,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
             dice={snapshot.state.dice}
             legalIds={legal}
             onMove={(tokenId) =>
-              socket.emit("moveToken", { tokenId }, () => undefined)
+              socket.emit("moveToken", { tokenId }, (r) => { if (!r.ok) setError(r.error.message); })
             }
           />
         </div>
@@ -777,8 +848,8 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
       <div className="menu-content">
         <div className="logo-section">
           <div className="logo-dice">🎲</div>
-          <h1 className="logo-title">LUDO<span>FRIENDS</span></h1>
-          <p className="logo-sub">A little luck. A lot of friendly rivalry.</p>
+          <h1 className="logo-title">Play Ludo <span>with Friends</span></h1>
+          <p className="logo-sub">Roll the dice, race your tokens home, and make game night anywhere.</p>
           <div className="landing-pills"><span>2–4 players</span><span>Instant rooms</span><span>Play solo with bots</span></div>
         </div>
         <div className="landing-board" aria-hidden="true">
@@ -792,17 +863,17 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
           <span className="landing-token token-c">●</span><span className="landing-token token-d">●</span>
         </div>
         <div className="menu-cards">
-          <div className="menu-card card-3d" onClick={() => onSelect("bot")}>
+          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect("bot"); }} onClick={() => onSelect("bot")}>
             <div className="menu-card-icon">🤖</div>
             <h3>Play vs Bots</h3>
             <p>Face 3 AI opponents. No friends needed — we got you!</p>
-            <button className="btn-primary">Play Now →</button>
+            <span className="btn-primary card-cta">Play vs Bots →</span>
           </div>
-          <div className="menu-card card-3d" onClick={() => onSelect("multiplayer")}>
+          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect("multiplayer"); }} onClick={() => onSelect("multiplayer")}>
             <div className="menu-card-icon">🌐</div>
             <h3>Multiplayer</h3>
             <p>Create or join a room. Play with 2–4 friends online.</p>
-            <button className="btn-secondary">Play Online →</button>
+            <span className="btn-secondary card-cta">Create or Join Room →</span>
           </div>
         </div>
         <div className="rules-strip">
@@ -810,6 +881,12 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
           <span>🎲 Roll a 6 to leave the yard</span>
           <span>💥 Land on opponents to send them back</span>
         </div>
+        <section className="landing-info" aria-label="How to play">
+          <h2>Game night in three steps</h2>
+          <div className="info-grid"><article><b>01 · Make a room</b><p>Create a private room and share its code.</p></article><article><b>02 · Invite your crew</b><p>Two to four players join from any device.</p></article><article><b>03 · Roll and race</b><p>Get every token home before your friends do.</p></article></div>
+          <p className="feature-line">Online with friends · Play against bots · Private room codes · No signup</p>
+        </section>
+        <footer className="landing-footer">Ludo Friends <span>Made for game night.</span></footer>
       </div>
     </div>
   );
@@ -822,3 +899,5 @@ export default function App() {
   if (mode === "multiplayer") return <MultiplayerEntry onExit={() => setMode("menu")} />;
   return <Menu onSelect={setMode} />;
 }
+
+
