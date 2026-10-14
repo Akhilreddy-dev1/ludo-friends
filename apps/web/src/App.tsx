@@ -438,7 +438,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
         <button className="btn-ghost btn-sm" onClick={onExit}>← Exit</button>
         <div className="turn-info">
           <span className={`turn-dot ${currentPlayer?.color}`} />
-          <span>{isMyTurn ? "Your Turn!" : `${currentPlayer?.name}'s turn`}</span>
+          <span><small>{isMyTurn ? "YOUR TURN" : "NOW PLAYING"}</small><strong>{isMyTurn ? "Your move" : `${currentPlayer?.name}'s turn`}</strong></span>
         </div>
         <div className="scoreboard-mini">
           {gs.players.map((p) => (
@@ -474,6 +474,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
           />
         </div>
         <aside className="controls-panel card-3d">
+          <div className="panel-heading"><span className="eyebrow">GAME CONTROL</span><h2>{isMyTurn ? "Make your move" : "Players"}</h2></div>
           <Dice3D
             value={gs.dice}
             rolling={rolling}
@@ -493,8 +494,8 @@ function BotGame({ onExit }: { onExit: () => void }) {
             <p className="section-label">SCORES</p>
             {gs.players.map((p) => (
               <div key={p.id} className={`score-row${p.id === gs.currentPlayerId ? " active-score" : ""}`}>
-                <span className={`dot-sm ${p.color}`} />
-                <span className="score-name">{p.id === HUMAN_ID ? "You" : p.name}</span>
+                <span className={`player-avatar ${p.color}`}>{(p.id === HUMAN_ID ? "Y" : p.name.slice(0, 1)).toUpperCase()}</span>
+                <span className="player-details"><strong className="score-name">{p.id === HUMAN_ID ? "You" : p.name}</strong><small>{p.tokens.filter((token) => token.position === 56).length}/4 home</small></span>
                 <div className="token-pips">
                   {[0, 1, 2, 3].map((i) => (
                     <span
@@ -758,9 +759,10 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
         <button className="btn-ghost btn-sm" onClick={onExit}>← Exit</button>
         <div className="turn-info">
           <span className={`turn-dot ${currentPlayer?.color}`} />
-          <span>{current ? "Your Turn!" : `${currentPlayer?.name}'s turn`}</span>
+          <span><small>{current ? "YOUR TURN" : "NOW PLAYING"}</small><strong>{current ? "Your move" : `${currentPlayer?.name}'s turn`}</strong></span>
         </div>
-        <div className="timer-badge">{seconds}s</div>
+        <div className="timer-badge" aria-label={`${seconds} seconds remaining`}><span>TURN TIMER</span><strong>{seconds}<small>s</small></strong><i style={{ "--timer-progress": `${Math.max(0, Math.min(100, seconds / snapshot.turnSeconds * 100))}%` } as React.CSSProperties} /></div>
+        <div className="room-code-mini"><span>ROOM</span><strong>{snapshot.code}</strong><button className="btn-ghost btn-sm" aria-label="Copy room code" onClick={() => navigator.clipboard?.writeText(snapshot.code).then(() => setToast("Room code copied!")).catch(() => setToast("Copy unavailable"))}>Copy</button></div>
         <button className="btn-ghost btn-sm" aria-label={soundOn ? "Turn sound off" : "Turn sound on"} onClick={() => setSoundOn((enabled) => !enabled)}>{soundOn ? "🔊" : "🔇"}</button>
       </header>
       <div className="event-toast" role="status" aria-live="polite">{toast}</div>
@@ -793,6 +795,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
           />
         </div>
         <aside className="controls-panel card-3d">
+          <div className="panel-heading"><span className="eyebrow">GAME CONTROL</span><h2>{current ? "Make your move" : "Players"}</h2></div>
           <Dice3D
             value={snapshot.state.dice}
             rolling={rolling}
@@ -813,10 +816,8 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                 key={p.id}
                 className={`score-row${p.id === snapshot.state.currentPlayerId ? " active-score" : ""}`}
               >
-                <span className={`dot-sm ${p.color}`} />
-                <span className="score-name">
-                  {p.id === me?.id ? "You" : p.name}
-                </span>
+                <span className={`player-avatar ${p.color}`}>{(p.id === me?.id ? "Y" : p.name.slice(0, 1)).toUpperCase()}</span>
+                <span className="player-details"><strong className="score-name">{p.id === me?.id ? "You" : p.name}</strong><small>{p.connected ? `${p.tokens.filter((token) => token.position === 56).length}/4 home` : "Reconnecting…"}</small></span>
                 <div className="token-pips">
                   {[0, 1, 2, 3].map((i) => (
                     <span
