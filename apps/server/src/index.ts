@@ -20,6 +20,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 });
 const manager = new RoomManager();
 const timers = new Map<string, NodeJS.Timeout>();
+const reconnectTimers = new Map<string, NodeJS.Timeout>();
 const port = Number(process.env.PORT ?? 3001);
 const turnSeconds = Math.max(
   15,
@@ -74,12 +75,20 @@ io.on("connection", (socket) => {
       if (room.state.phase === "playing") armTimer(room.code);
     }
   };
+  socket.on("resumeSession", (payload, ack) => {
+    const room = manager.resume(socket.id, payload.sessionId);
+    if (!room) { ack({ ok: false, error: { code: "SESSION_EXPIRED", message: "Your room session expired. Join again with the room code." } }); return; }
+    socket.join(room.code);
+    emit();
+    ack({ ok: true, data: null });
+  });
   socket.on("createRoom", (payload, ack) =>
     respond(ack, () => {
       const room = manager.create(
         socket.id,
         payload.name,
         Math.max(15, Math.min(30, payload.turnSeconds ?? turnSeconds)),
+        payload.sessionId,
       );
       socket.join(room.code);
       emit();
@@ -88,7 +97,7 @@ io.on("connection", (socket) => {
   );
   socket.on("joinRoom", (payload, ack) =>
     respond(ack, () => {
-      const room = manager.join(socket.id, payload.code, payload.name);
+      const room = manager.join(socket.id, payload.code, payload.name, payload.sessionId);
       socket.join(room.code);
       emit();
       return { code: room.code };
@@ -108,6 +117,24 @@ io.on("connection", (socket) => {
       const room = manager.getBySocket(socket.id);
       if (!room) throw new Error("Not in a room");
       manager.setReady(room, socket.id, payload.ready);
+      emit();
+      return null;
+    }),
+  );
+  socket.on("startGame", (ack) =>
+    respond(ack, () => {
+      const room = manager.getBySocket(socket.id);
+      if (!room) throw new Error("Not in a room");
+      manager.start(room, socket.id);
+      emit();
+      return null;
+    }),
+  );
+  socket.on("playAgain", (ack) =>
+    respond(ack, () => {
+      const room = manager.getBySocket(socket.id);
+      if (!room) throw new Error("Not in a room");
+      manager.playAgain(room, socket.id);
       emit();
       return null;
     }),
@@ -150,19 +177,21 @@ io.on("connection", (socket) => {
     }),
   );
   socket.on("disconnect", () => {
-    const room = manager.remove(socket.id);
+    const room = manager.disconnect(socket.id);
     if (room) {
       broadcast(room.code);
-      if (room.state.players.length === 0) {
-        const timer = timers.get(room.code);
-        if (timer) clearTimeout(timer);
-        timers.delete(room.code);
-      } else if (room.state.phase === "playing") {
-        armTimer(room.code);
-      }
+      if (room.state.phase === "playing") armTimer(room.code);
+      const grace = setTimeout(() => {
+        reconnectTimers.delete(socket.id);
+        const expired = manager.remove(socket.id);
+        if (expired) { broadcast(expired.code); if (expired.state.phase === "playing") armTimer(expired.code); }
+      }, 30_000);
+      reconnectTimers.set(socket.id, grace);
     }
   });
 });
 httpServer.listen(port, () =>
   console.log(`Ludo server listening on http://localhost:${port}`),
 );
+
+
