@@ -8,7 +8,6 @@ import type {
   ServerToClientEvents,
   Ack,
 } from "@ludo/shared";
-import { legalTokenIds } from "@ludo/game-core";
 import { RoomManager } from "./room-manager";
 
 const app = express();
@@ -47,15 +46,13 @@ function broadcast(roomCode: string): void {
   if (data) io.to(roomCode).emit("snapshot", manager.snapshot(data));
 }
 function armTimer(roomCode: string): void {
-  const existing = timers.get(roomCode);
-  if (existing) clearTimeout(existing);
-  timers.delete(roomCode);
   const room = [...io.sockets.sockets]
     .map(([, socket]) => manager.getBySocket(socket.id))
     .find((candidate) => candidate?.code === roomCode);
   if (!room || room.state.phase !== "playing") return;
+  const existing = timers.get(roomCode);
+  if (existing) clearTimeout(existing);
   room.state.turnDeadline = Date.now() + room.turnSeconds * 1000;
-  broadcast(roomCode);
   timers.set(
     roomCode,
     setTimeout(() => {
@@ -116,11 +113,7 @@ io.on("connection", (socket) => {
     respond(ack, () => {
       const room = manager.getBySocket(socket.id);
       if (!room) throw new Error("Not in a room");
-      const roll = manager.roll(room, socket.id);
-      const player = room.state.players.find((candidate) => candidate.id === socket.id);
-      if (room.state.dice !== null && player && legalTokenIds(player, roll).length === 0) {
-        manager.timeout(room);
-      }
+      manager.roll(room, socket.id);
       emit();
       return null;
     }),
@@ -140,11 +133,6 @@ io.on("connection", (socket) => {
       if (room) {
         socket.leave(room.code);
         broadcast(room.code);
-        if (room.state.players.length === 0) {
-          const timer = timers.get(room.code);
-          if (timer) clearTimeout(timer);
-          timers.delete(room.code);
-        } else if (room.state.phase === "playing") armTimer(room.code);
       }
       return null;
     }),
@@ -153,12 +141,9 @@ io.on("connection", (socket) => {
     const room = manager.remove(socket.id);
     if (room) {
       broadcast(room.code);
-      if (room.state.players.length === 0) {
-        const timer = timers.get(room.code);
-        if (timer) clearTimeout(timer);
-        timers.delete(room.code);
-      } else if (room.state.phase === "playing") {
-        armTimer(room.code);
+      if (room.state.currentPlayerId === socket.id) {
+        manager.timeout(room);
+        broadcast(room.code);
       }
     }
   });
