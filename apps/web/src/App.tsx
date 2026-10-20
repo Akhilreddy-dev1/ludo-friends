@@ -869,40 +869,39 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
     };
   }, []);
   return (
-    <div className="menu-root" ref={rootRef}>
-      <div className="menu-bg">
-        <div className="floating-token t1">🔴</div>
-        <div className="floating-token t2">🟢</div>
-        <div className="floating-token t3">🟡</div>
-        <div className="floating-token t4">🔵</div>
-      </div>
+    <div className="menu-root">
+      <div className="menu-bg" />
       <div className="menu-content">
         <div className="logo-section">
           <div className="logo-dice">🎲</div>
           <h1 className="logo-title">Play Ludo <span>with Friends</span></h1>
           <p className="logo-sub">Roll the dice, race your tokens home, and make game night anywhere.</p>
-          <div className="landing-pills"><span>2–4 players</span><span>Instant rooms</span><span>Play solo with bots</span></div>
-        </div>
-        <div className="landing-board" aria-hidden="true">
-          <div className="landing-orbit orbit-red"><i /><i /><i /><i /></div>
-          <div className="landing-orbit orbit-green"><i /><i /><i /><i /></div>
-          <div className="landing-orbit orbit-yellow"><i /><i /><i /><i /></div>
-          <div className="landing-orbit orbit-blue"><i /><i /><i /><i /></div>
-          <div className="landing-route route-a" /><div className="landing-route route-b" />
-          <div className="landing-center">✦</div>
-          <span className="landing-token token-a">●</span><span className="landing-token token-b">●</span>
-          <span className="landing-token token-c">●</span><span className="landing-token token-d">●</span>
-          <span className="landing-die die-red" aria-hidden="true">⚅</span>
-          <span className="landing-die die-green" aria-hidden="true">⚄</span>
+          <div className="landing-pills">
+            <span>2–4 players</span>
+            <span>Instant rooms</span>
+            <span>Play solo with bots</span>
+          </div>
         </div>
         <div className="menu-cards">
-          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect("bot"); } }} onClick={() => onSelect("bot")}>
+          <div
+            className="menu-card card-3d"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect("bot"); } }}
+            onClick={() => onSelect("bot")}
+          >
             <div className="menu-card-icon">🤖</div>
             <h3>Play vs Bots</h3>
             <p>Face 3 AI opponents. No friends needed — we got you!</p>
             <span className="btn-primary card-cta">Play vs Bots →</span>
           </div>
-          <div className="menu-card card-3d" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect("multiplayer"); } }} onClick={() => onSelect("multiplayer")}>
+          <div
+            className="menu-card card-3d"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect("multiplayer"); } }}
+            onClick={() => onSelect("multiplayer")}
+          >
             <div className="menu-card-icon">🌐</div>
             <h3>Multiplayer</h3>
             <p>Create or join a room. Play with 2–4 friends online.</p>
@@ -914,12 +913,6 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
           <span>🎲 Roll a 6 to leave the yard</span>
           <span>💥 Land on opponents to send them back</span>
         </div>
-        <section className="landing-info" aria-label="How to play">
-          <h2>Game night in three steps</h2>
-          <div className="info-grid"><article><b>01 · Make a room</b><p>Create a private room and share its code.</p></article><article><b>02 · Invite your crew</b><p>Two to four players join from any device.</p></article><article><b>03 · Roll and race</b><p>Get every token home before your friends do.</p></article></div>
-          <p className="feature-line">Online with friends · Play against bots · Private room codes · No signup</p>
-        </section>
-        <footer className="landing-footer">Ludo Friends <span>Made for game night.</span></footer>
       </div>
     </div>
   );
