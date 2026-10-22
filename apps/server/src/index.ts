@@ -10,10 +10,15 @@ import type {
 } from "@ludo/shared";
 import { legalTokenIds } from "@ludo/game-core";
 import { RoomManager } from "./room-manager";
+import { recordWin, getLeaderboard } from "./db";
 
 const app = express();
 app.use(cors());
 app.get("/health", (_request, response) => response.json({ ok: true }));
+app.get("/leaderboard", async (req, res) => {
+  const leaderboard = await getLeaderboard();
+  res.json(leaderboard);
+});
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: { origin: "*" },
@@ -157,6 +162,13 @@ io.on("connection", (socket) => {
       const room = manager.getBySocket(socket.id);
       if (!room) throw new Error("Not in a room");
       manager.move(room, socket.id, payload.tokenId);
+
+      // NEW: Record win in database
+      const winner = room.state.players.find(p => p.id === room.state.winnerId);
+      if (winner) {
+        recordWin(winner.name).catch(err => console.error("Database Error:", err));
+      }
+
       emit();
       return null;
     }),
@@ -186,12 +198,10 @@ io.on("connection", (socket) => {
         const expired = manager.remove(socket.id);
         if (expired) { broadcast(expired.code); if (expired.state.phase === "playing") armTimer(expired.code); }
       }, 30_000);
-      reconnectTimers.set(socket.id, grace);
+      broadcast(room.code);
     }
   });
-});
+}
 httpServer.listen(port, () =>
   console.log(`Ludo server listening on http://localhost:${port}`),
 );
-
-
