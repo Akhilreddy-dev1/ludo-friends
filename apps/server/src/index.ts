@@ -163,7 +163,6 @@ io.on("connection", (socket) => {
       if (!room) throw new Error("Not in a room");
       manager.move(room, socket.id, payload.tokenId);
 
-      // NEW: Record win in database
       const winner = room.state.players.find(p => p.id === room.state.winnerId);
       if (winner) {
         recordWin(winner.name).catch(err => console.error("Database Error:", err));
@@ -201,7 +200,8 @@ io.on("connection", (socket) => {
       broadcast(room.code);
     }
   });
-}
-httpServer.listen(port, () =>
-  console.log(`Ludo server listening on http://localhost:${port}`),
-);
+});
+
+httpServer.listen(port, () => {
+  console.log(`Ludo server listening on http://localhost:${port}`);
+});
