@@ -22,6 +22,12 @@ import type {
   RoomSnapshot,
   ServerToClientEvents,
 } from "@ludo/shared";
+import {
+  createOfflineSession,
+  decodeOfflineSession,
+  encodeOfflineSession,
+  type OfflineSession,
+} from "@ludo/shared";
 
 // Utility for Tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -32,6 +38,7 @@ const SERVER_CONFIGURED = Boolean(import.meta.env.VITE_SERVER_URL) || import.met
 const SERVER = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 type Mode = "menu" | "bot" | "multiplayer";
+const OFFLINE_STORAGE_KEY = "ludo-friends-offline-game";
 
 // ─── Bot AI Logic ──────────────────────────────────────────────────────────────────
 function scoreBotMove(state: GameState, botId: string, tokenId: number, roll: number): number {
@@ -77,13 +84,22 @@ const HUMAN_ID = "human";
 const BOT_IDS = ["bot-1", "bot-2", "bot-3"];
 const BOT_COLORS: Color[] = ["green", "yellow", "blue"];
 
-function makeBotInitialState(): BotState {
+function makeBotInitialState(saved?: OfflineSession | null): BotState {
+  if (saved?.humanId === HUMAN_ID && saved.state.players.length === 4) {
+    return { gameState: saved.state, phase: saved.state.phase === "finished" ? "finished" : "playing" };
+  }
   const gs = createGameState();
   gs.players.push(createPlayer(HUMAN_ID, "You", "red"));
   BOT_IDS.forEach((id, i) => gs.players.push(createPlayer(id, `Bot ${i + 1}`, BOT_COLORS[i])));
   gs.phase = "playing";
   gs.currentPlayerId = HUMAN_ID;
   return { gameState: gs, phase: "playing" };
+}
+
+function loadOfflineState(): BotState {
+  if (typeof window === "undefined") return makeBotInitialState();
+  const saved = decodeOfflineSession(window.localStorage.getItem(OFFLINE_STORAGE_KEY));
+  return makeBotInitialState(saved);
 }
 
 function botReducer(state: BotState, action: BotAction): BotState {
@@ -341,13 +357,20 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
 }
 
 function BotGame({ onExit }: { onExit: () => void }) {
-  const [state, dispatch] = useReducer(botReducer, null, makeBotInitialState);
+  const [state, dispatch] = useReducer(botReducer, null, loadOfflineState);
   const [rolling, setRolling] = useState(false);
   const { gameState: gs, phase } = state;
   const isMyTurn = gs.currentPlayerId === HUMAN_ID;
   const isBot = BOT_IDS.includes(gs.currentPlayerId ?? "");
   const me = gs.players.find((p) => p.id === HUMAN_ID)!;
   const legal = useMemo(() => (isMyTurn && gs.dice ? legalTokenIds(me, gs.dice) : []), [isMyTurn, me, gs.dice]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      OFFLINE_STORAGE_KEY,
+      encodeOfflineSession(createOfflineSession(gs, HUMAN_ID)),
+    );
+  }, [gs]);
 
   const rollDice = useCallback(() => {
     if (!isMyTurn || gs.dice !== null || rolling) return;
@@ -406,8 +429,11 @@ function BotGame({ onExit }: { onExit: () => void }) {
               <Trophy size={80} className="mx-auto text-yellow-500 mb-4 animate-bounce" />
               <h2 className="text-5xl font-black mb-2">{winner?.id === HUMAN_ID ? "YOU WIN!" : `${winner?.name} WINS!`}</h2>
               <p className="text-slate-400 mb-8 text-lg">A legendary victory! 🎲</p>
-              <button onClick={onExit} className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all transform hover:scale-105">
-                Play Again
+              <button onClick={() => {
+                window.localStorage.removeItem(OFFLINE_STORAGE_KEY);
+                onExit();
+              }} className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all transform hover:scale-105">
+                New Game
               </button>
             </div>
           </motion.div>
@@ -799,56 +825,64 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 }
 
 function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
+  const hasSavedOfflineGame = typeof window !== "undefined" && Boolean(
+    decodeOfflineSession(window.localStorage.getItem(OFFLINE_STORAGE_KEY)),
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 overflow-hidden relative">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950 -z-10" />
-      <div className="w-full max-w-4xl text-center space-y-12">
+    <div className="min-h-screen bg-[#f3efe6] text-[#1f2933] flex items-center justify-center p-4 overflow-hidden relative">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#f3efe6_0%,#e7f0ed_100%)] -z-10" />
+      <div className="w-full max-w-5xl space-y-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
+          className="max-w-3xl"
         >
-          <div className="text-7xl mb-4 animate-bounce">🎲</div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter">
-            PLAY LUDO <span className="text-blue-500 block md:inline">WITH FRIENDS</span>
+          <div className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-[#0f766e]">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0f766e] text-white">LF</span>
+            Ludo Friends
+          </div>
+          <h1 className="max-w-2xl text-5xl font-black leading-[0.95] tracking-[-0.06em] text-[#17212b] md:text-7xl">
+            A small board.<br /><span className="text-[#0f766e]">A lot of rivalry.</span>
           </h1>
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto">
-            Roll the dice, race your tokens home, and make game night happen anywhere.
+          <p className="mt-6 max-w-xl text-lg leading-8 text-[#66727d]">
+            A calm, tactile Ludo room for quick matches with friends or a reliable game when you are offline.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <div className="grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2">
           <motion.button
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={() => onSelect("bot")}
-            className="group p-8 bg-slate-900 border border-slate-800 rounded-3xl text-left hover:border-blue-500 transition-all shadow-xl"
+            className="group rounded-[1.75rem] border border-[#d8d2c6] bg-[#fffdf8] p-8 text-left shadow-[0_16px_40px_rgba(54,68,70,0.09)] transition-all hover:-translate-y-1 hover:border-[#0f766e]"
           >
-            <div className="text-4xl mb-4 group-hover:scale-125 transition-transform">🤖</div>
-            <h3 className="text-2xl font-bold mb-2">Play vs Bots</h3>
-            <p className="text-slate-500 text-sm mb-6">Face 3 AI opponents. No friends needed—we got you!</p>
-            <span className="inline-flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-widest">
-              Start Solo <span className="group-hover:translate-x-1 transition-transform">→</span>
+            <div className="mb-12 flex items-start justify-between"><span className="text-4xl">♟</span><span className="rounded-full bg-[#e7f3ef] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0f766e]">{hasSavedOfflineGame ? "Saved locally" : "No account needed"}</span></div>
+            <h3 className="text-2xl font-black text-[#17212b]">{hasSavedOfflineGame ? "Resume offline game" : "Play offline"}</h3>
+            <p className="mb-6 mt-2 text-sm leading-6 text-[#66727d]">Three thoughtful opponents, deterministic rules, and a match that stays on this device.</p>
+            <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#0f766e]">
+              {hasSavedOfflineGame ? "Continue match" : "Start solo"} <span className="group-hover:translate-x-1 transition-transform">→</span>
             </span>
           </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={() => onSelect("multiplayer")}
-            className="group p-8 bg-slate-900 border border-slate-800 rounded-3xl text-left hover:border-blue-500 transition-all shadow-xl"
+            className="group rounded-[1.75rem] border border-[#cbd8d5] bg-[#173b3a] p-8 text-left text-white shadow-[0_16px_40px_rgba(23,59,58,0.22)] transition-all hover:-translate-y-1 hover:bg-[#1d4a48]"
           >
-            <div className="text-4xl mb-4 group-hover:scale-125 transition-transform">🌐</div>
-            <h3 className="text-2xl font-bold mb-2">Multiplayer</h3>
-            <p className="text-slate-500 text-sm mb-6">Create or join a room. Play with 2–4 friends online.</p>
-            <span className="inline-flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-widest">
-              Join Room <span className="group-hover:translate-x-1 transition-transform">→</span>
+            <div className="mb-12 flex items-start justify-between"><span className="text-4xl">◎</span><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#b7ddd3]">2–4 players</span></div>
+            <h3 className="text-2xl font-black">Make a room</h3>
+            <p className="mb-6 mt-2 text-sm leading-6 text-[#b7c9c5]">Share a short code, choose your colors, and play with the server keeping every move fair.</p>
+            <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#b7ddd3]">
+              Create or join <span className="group-hover:translate-x-1 transition-transform">→</span>
             </span>
           </motion.button>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-600">
-          <span className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">🎯 4 Tokens Home to Win</span>
-          <span className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">🎲 Roll 6 to Leave Yard</span>
-          <span className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">💥 Capture to Reset Opponent</span>
+        <div className="flex flex-wrap gap-3 text-xs font-bold uppercase tracking-widest text-[#7a8587]">
+          <span className="rounded-full border border-[#d8d2c6] bg-white/50 px-3 py-2">4 tokens to finish</span>
+          <span className="rounded-full border border-[#d8d2c6] bg-white/50 px-3 py-2">Six to leave yard</span>
+          <span className="rounded-full border border-[#d8d2c6] bg-white/50 px-3 py-2">Capture to reset</span>
         </div>
+        {hasSavedOfflineGame && <button onClick={() => { window.localStorage.removeItem(OFFLINE_STORAGE_KEY); window.location.reload(); }} className="text-xs font-bold uppercase tracking-widest text-[#9b5c45] underline underline-offset-4">Forget saved offline game</button>}
       </div>
     </div>
   );
