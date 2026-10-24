@@ -535,17 +535,20 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     }
     socket.on("snapshot", setSnapshot);
     const onConnect = () => {
-      setConnection(""); setError("");
+      setConnection("Connected. Restoring your room…"); setError("");
       socket.emit("resumeSession", { sessionId }, (result) => {
-        if (result.ok) setConnection("Room restored.");
+        setConnection(result.ok ? "Room restored." : "Connected. Create or join a room.");
       });
     };
     const onConnectError = () => setConnection("Server unavailable. Check backend.");
+    const onDisconnect = () => setConnection("Connection lost. Reconnecting…");
     socket.on("connect", onConnect);
     socket.on("connect_error", onConnectError);
+    socket.on("disconnect", onDisconnect);
     socket.connect();
     return () => {
       socket.off("snapshot", setSnapshot);
+      socket.off("disconnect", onDisconnect);
       socket.disconnect();
     };
   }, [socket, sessionId]);

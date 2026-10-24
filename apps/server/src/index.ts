@@ -81,6 +81,14 @@ io.on("connection", (socket) => {
     }
   };
   socket.on("resumeSession", (payload, ack) => {
+    const previousSocketId = manager.getSessionPlayerId(payload.sessionId);
+    const reconnectTimer = previousSocketId
+      ? reconnectTimers.get(previousSocketId)
+      : undefined;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimers.delete(previousSocketId!);
+    }
     const room = manager.resume(socket.id, payload.sessionId);
     if (!room) { ack({ ok: false, error: { code: "SESSION_EXPIRED", message: "Your room session expired. Join again with the room code." } }); return; }
     socket.join(room.code);
@@ -197,6 +205,7 @@ io.on("connection", (socket) => {
         const expired = manager.remove(socket.id);
         if (expired) { broadcast(expired.code); if (expired.state.phase === "playing") armTimer(expired.code); }
       }, 30_000);
+      reconnectTimers.set(socket.id, grace);
       broadcast(room.code);
     }
   });

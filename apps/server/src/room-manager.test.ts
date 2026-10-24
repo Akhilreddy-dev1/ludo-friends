@@ -37,7 +37,7 @@ describe("room manager", () => {
     expect(resumed).toBe(room);
     expect(room.state.players.find((player) => player.name === "B")?.connected).toBe(true);
     expect(manager.getBySocket("b2")).toBe(room);
+    expect(manager.getSessionPlayerId("session-b")).toBe("b2");
   });
 });
-
 

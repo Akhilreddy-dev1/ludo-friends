@@ -54,6 +54,9 @@ export class RoomManager {
     const code = this.socketRooms.get(socketId);
     return code ? this.rooms.get(code) : undefined;
   }
+  getSessionPlayerId(sessionId: string): string | undefined {
+    return this.sessions.get(sessionId)?.playerId;
+  }
   resume(socketId: string, sessionId: string): Room | undefined {
     const session = this.sessions.get(sessionId);
     if (!session) return undefined;
@@ -231,5 +234,4 @@ export class RoomManager {
     return code;
   }
 }
-
 
