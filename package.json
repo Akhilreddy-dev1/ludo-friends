@@ -4,6 +4,7 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "corepack pnpm --parallel --filter @ludo/server --filter @ludo/web dev",
+    "start": "corepack pnpm --filter @ludo/server start",
     "build": "corepack pnpm -r build",
     "typecheck": "corepack pnpm -r typecheck",
     "test": "corepack pnpm -r test",
