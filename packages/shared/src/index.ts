@@ -1,4 +1,11 @@
 import type { Color, GameState } from "@ludo/game-core";
+export {
+  OFFLINE_SESSION_VERSION,
+  createOfflineSession,
+  decodeOfflineSession,
+  encodeOfflineSession,
+  type OfflineSession,
+} from "./offline";
 
 export interface RoomSnapshot {
   code: string;
@@ -33,5 +40,4 @@ export type Ack<T> = (
     | { ok: true; data: T }
     | { ok: false; error: { code: string; message: string } },
 ) => void;
-
 

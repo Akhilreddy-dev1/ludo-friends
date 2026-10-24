@@ -16,9 +16,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo shared-ok"
+    "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
   }
 }
