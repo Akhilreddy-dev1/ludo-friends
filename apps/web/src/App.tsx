@@ -164,7 +164,7 @@ function Dice3D({ value, rolling, onClick, disabled }: { value: number | null; r
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "relative w-20 h-20 bg-white text-slate-900 rounded-2xl shadow-xl flex items-center justify-center text-4xl font-bold transition-all",
+        "dice-cube relative w-20 h-20 bg-white text-slate-900 rounded-2xl shadow-xl flex items-center justify-center text-4xl font-bold transition-all",
         rolling && "animate-bounce",
         disabled && "opacity-50 cursor-not-allowed grayscale"
       )}
@@ -228,8 +228,8 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
   const getPlayerByColor = (color: Color) => players.find((p) => p.color === color);
 
   return (
-    <div className="relative aspect-square w-full max-w-[600px] bg-slate-800 p-4 rounded-3xl shadow-2xl border-8 border-slate-700">
-      <div className="relative w-full h-full bg-slate-700 rounded-lg overflow-hidden grid grid-cols-15 grid-rows-15 gap-px">
+    <div className="board-stage">
+      <div className="board-surface relative w-full h-full bg-slate-700 rounded-lg overflow-hidden grid grid-cols-15 grid-rows-15 gap-px">
 
         {/* Corner Home Zones */}
         {(["red", "green", "yellow", "blue"] as Color[]).map((color) => {
@@ -243,7 +243,7 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
           }[color];
 
           return (
-            <div key={color} className={cn("absolute p-4 rounded-xl border-2 border-white/10", zoneStyle)}>
+            <div key={color} className={cn("board-zone absolute p-4 rounded-xl border-2 border-white/10", zoneStyle)}>
               <div className="text-[10px] font-bold opacity-50 uppercase mb-2">{color}</div>
               <div className="grid grid-cols-2 gap-2">
                 {[0, 1, 2, 3].map((slot) => {
@@ -256,7 +256,7 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
                           whileHover={isLegal ? { scale: 1.2 } : {}}
                           onClick={() => isLegal && onMove(tok.id)}
                           className={cn(
-                            "w-full h-full rounded-full text-white font-bold text-xs shadow-lg transition-all",
+                            "token-3d w-full h-full rounded-full text-white font-bold text-xs shadow-lg transition-all",
                             color === 'red' ? 'bg-red-500' : color === 'green' ? 'bg-green-500' : color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
                             isLegal && "ring-4 ring-white animate-pulse scale-110"
                           )}
@@ -273,7 +273,7 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
         })}
 
         {/* Center Finish */}
-        <div className="absolute inset-[40%] flex items-center justify-center bg-slate-900 rounded-2xl border-2 border-slate-700 shadow-inner">
+        <div className="board-center-3d absolute inset-[40%] flex items-center justify-center bg-slate-900 rounded-2xl border-2 border-slate-700 shadow-inner">
           <div className="text-center">
             <div className="text-3xl mb-1">★</div>
             <div className="text-[10px] font-black text-slate-500">FINISH</div>
@@ -304,7 +304,7 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
                       whileHover={isLegal ? { scale: 1.2 } : {}}
                       onClick={() => isLegal && onMove(token.id)}
                       className={cn(
-                        "w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
+                        "token-3d w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
                         player.color === 'red' ? 'bg-red-500' : player.color === 'green' ? 'bg-green-500' : player.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
                         isLegal && "ring-2 ring-white animate-pulse scale-125"
                       )}
@@ -337,7 +337,7 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
                         whileHover={isLegal ? { scale: 1.2 } : {}}
                         onClick={() => isLegal && onMove(token.id)}
                         className={cn(
-                          "w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
+                          "token-3d w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
                           player.color === 'red' ? 'bg-red-500' : player.color === 'green' ? 'bg-green-500' : player.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
                           isLegal && "ring-2 ring-white animate-pulse scale-125"
                         )}
@@ -833,59 +833,56 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#f3efe6] text-[#1f2933] flex items-center justify-center p-4 overflow-hidden relative">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,#f3efe6_0%,#e7f0ed_100%)] -z-10" />
-      <div className="w-full max-w-5xl space-y-10">
+    <div className="landing-page">
+      <div className="landing-glow landing-glow-one" />
+      <div className="landing-glow landing-glow-two" />
+      <div className="landing-shell">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="max-w-3xl"
+          className="landing-hero"
         >
-          <div className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-[#0f766e]">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0f766e] text-white">LF</span>
-            Ludo Friends
+          <div className="landing-kicker">
+            <span className="landing-mark">LF</span>
+            <span>Ludo Friends</span>
+            <span className="landing-live"><span /> Live rooms</span>
           </div>
-          <h1 className="max-w-2xl text-5xl font-black leading-[0.95] tracking-[-0.06em] text-[#17212b] md:text-7xl">
-            A small board.<br /><span className="text-[#0f766e]">A lot of rivalry.</span>
+          <h1>
+            A small board.<br /><span>A lot of rivalry.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-[#66727d]">
-            A calm, tactile Ludo room for quick matches with friends or a reliable game when you are offline.
-          </p>
+          <p className="landing-lede">A tactile Ludo room for quick matches with friends — or a reliable game when the Wi‑Fi disappears.</p>
+          <div className="landing-stats">
+            <span><strong>4</strong> players</span>
+            <span><strong>1</strong> shared board</span>
+            <span><strong>0</strong> accounts</span>
+          </div>
         </motion.div>
 
-        <div className="grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="landing-options">
           <motion.button
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={() => onSelect("bot")}
-            className="group rounded-[1.75rem] border border-[#d8d2c6] bg-[#fffdf8] p-8 text-left shadow-[0_16px_40px_rgba(54,68,70,0.09)] transition-all hover:-translate-y-1 hover:border-[#0f766e]"
+            className="landing-card landing-card-light group"
           >
-            <div className="mb-12 flex items-start justify-between"><span className="text-4xl">♟</span><span className="rounded-full bg-[#e7f3ef] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0f766e]">{hasSavedOfflineGame ? "Saved locally" : "No account needed"}</span></div>
-            <h3 className="text-2xl font-black text-[#17212b]">{hasSavedOfflineGame ? "Resume offline game" : "Play offline"}</h3>
-            <p className="mb-6 mt-2 text-sm leading-6 text-[#66727d]">Three thoughtful opponents, deterministic rules, and a match that stays on this device.</p>
-            <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#0f766e]">
-              {hasSavedOfflineGame ? "Continue match" : "Start solo"} <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </span>
+            <div className="landing-card-top"><span className="landing-icon">♟</span><span className="landing-pill">{hasSavedOfflineGame ? "Saved locally" : "No account needed"}</span></div>
+            <div><h2>{hasSavedOfflineGame ? "Resume offline game" : "Play offline"}</h2><p>Three thoughtful opponents, deterministic rules, and a match that stays on this device.</p></div>
+            <span className="landing-action">{hasSavedOfflineGame ? "Continue match" : "Start solo"} <span>→</span></span>
           </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={() => onSelect("multiplayer")}
-            className="group rounded-[1.75rem] border border-[#cbd8d5] bg-[#173b3a] p-8 text-left text-white shadow-[0_16px_40px_rgba(23,59,58,0.22)] transition-all hover:-translate-y-1 hover:bg-[#1d4a48]"
+            className="landing-card landing-card-dark group"
           >
-            <div className="mb-12 flex items-start justify-between"><span className="text-4xl">◎</span><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#b7ddd3]">2–4 players</span></div>
-            <h3 className="text-2xl font-black">Make a room</h3>
-            <p className="mb-6 mt-2 text-sm leading-6 text-[#b7c9c5]">Share a short code, choose your colors, and play with the server keeping every move fair.</p>
-            <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#b7ddd3]">
-              Create or join <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </span>
+            <div className="landing-card-top"><span className="landing-icon">◎</span><span className="landing-pill">2–4 players</span></div>
+            <div><h2>Make a room</h2><p>Share a short code, choose your colors, and play with the server keeping every move fair.</p></div>
+            <span className="landing-action">Create or join <span>→</span></span>
           </motion.button>
         </div>
 
-        <div className="flex flex-wrap gap-3 text-xs font-bold uppercase tracking-widest text-[#7a8587]">
-          <span className="rounded-full border border-[#d8d2c6] bg-white/50 px-3 py-2">4 tokens to finish</span>
-          <span className="rounded-full border border-[#d8d2c6] bg-white/50 px-3 py-2">Six to leave yard</span>
-          <span className="rounded-full border border-[#d8d2c6] bg-white/50 px-3 py-2">Capture to reset</span>
+        <div className="landing-rules">
+          <span>4 tokens to finish</span><span>Six to leave yard</span><span>Capture to reset</span>
         </div>
-        {hasSavedOfflineGame && <button onClick={() => { window.localStorage.removeItem(OFFLINE_STORAGE_KEY); window.location.reload(); }} className="text-xs font-bold uppercase tracking-widest text-[#9b5c45] underline underline-offset-4">Forget saved offline game</button>}
+        {hasSavedOfflineGame && <button onClick={() => { window.localStorage.removeItem(OFFLINE_STORAGE_KEY); window.location.reload(); }} className="landing-forget">Forget saved offline game</button>}
       </div>
     </div>
   );
