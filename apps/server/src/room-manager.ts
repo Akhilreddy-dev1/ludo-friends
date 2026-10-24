@@ -188,6 +188,13 @@ export class RoomManager {
       this.advance(room);
       return random;
     }
+    const player = room.state.players.find(
+      (candidate) => candidate.id === socketId,
+    );
+    if (player && legalTokenIds(player, random).length === 0) {
+      room.state.dice = null;
+      if (random !== 6) this.advance(room);
+    }
     return random;
   }
   move(room: Room, socketId: string, tokenId: number): void {
@@ -234,4 +241,3 @@ export class RoomManager {
     return code;
   }
 }
-

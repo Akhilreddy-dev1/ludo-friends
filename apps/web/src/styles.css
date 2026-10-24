@@ -366,6 +366,51 @@ label { display: grid; gap: 6px; font-size: 13px; color: var(--text-muted); }
   font-size: 12px;
 }
 
+.player-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.42);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.player-card-active {
+  border-color: rgba(96, 165, 250, 0.75);
+  background: rgba(30, 41, 59, 0.9);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.16), 0 8px 24px rgba(15, 23, 42, 0.25);
+  transform: translateY(-1px);
+}
+
+.player-card-compact { padding: 10px 12px; }
+.player-you {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.16);
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.player-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+.player-ready {
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.player-ready-on { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
+.player-ready-off { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+.player-progress { display: flex; width: 64px; flex-direction: column; gap: 4px; }
+.player-progress-track { height: 3px; overflow: hidden; border-radius: 999px; background: rgba(148, 163, 184, 0.18); }
+.player-progress-fill { display: block; height: 100%; border-radius: inherit; }
+
 /* ── Board Detail ──────────────────────────────────────────── */
 .home-zone {
   position: absolute;

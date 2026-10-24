@@ -31,7 +31,6 @@ describe("room manager", () => {
     manager.start(room, "a");
     manager.disconnect("b");
     manager.roll(room, "a", 1);
-    manager.timeout(room);
     expect(room.state.currentPlayerId).toBe("c");
     const resumed = manager.resume("b2", "session-b");
     expect(resumed).toBe(room);
@@ -39,5 +38,17 @@ describe("room manager", () => {
     expect(manager.getBySocket("b2")).toBe(room);
     expect(manager.getSessionPlayerId("session-b")).toBe("b2");
   });
-});
+  it("automatically advances when a non-six roll has no legal moves", () => {
+    const manager = new RoomManager();
+    const room = manager.create("a", "A", 20);
+    manager.join("b", room.code, "B");
+    manager.setReady(room, "a", true);
+    manager.setReady(room, "b", true);
+    manager.start(room, "a");
 
+    manager.roll(room, "a", 3);
+
+    expect(room.state.dice).toBeNull();
+    expect(room.state.currentPlayerId).toBe("b");
+  });
+});

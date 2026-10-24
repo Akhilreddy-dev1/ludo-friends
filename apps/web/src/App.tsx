@@ -34,6 +34,65 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function colorClasses(color: Color) {
+  return {
+    red: "bg-red-500 text-red-50",
+    green: "bg-green-500 text-green-50",
+    yellow: "bg-yellow-400 text-yellow-950",
+    blue: "bg-blue-500 text-blue-50",
+  }[color];
+}
+
+function PlayerCard({
+  player,
+  active,
+  isYou = false,
+  showReady = false,
+  compact = false,
+}: {
+  player: Player;
+  active: boolean;
+  isYou?: boolean;
+  showReady?: boolean;
+  compact?: boolean;
+}) {
+  const homeCount = player.tokens.filter((token) => token.position === 56).length;
+  const progress = player.tokens.map((token) => token.position === 56 ? 100 : Math.min(92, Math.round((token.position / 56) * 100)));
+
+  return (
+    <div className={cn("player-card", active && "player-card-active", compact && "player-card-compact")}>
+      <div className="flex min-w-0 items-center gap-3">
+        <div className={cn("player-avatar", colorClasses(player.color))}>
+          {player.name.slice(0, 1).toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-bold text-sm">{player.name}</span>
+            {isYou && <span className="player-you">You</span>}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className={cn("player-status-dot", player.connected ? "bg-emerald-400" : "bg-amber-400")} />
+            <span>{player.connected ? (active ? "Playing now" : `${homeCount}/4 home`) : "Reconnecting…"}</span>
+          </div>
+        </div>
+      </div>
+      {showReady ? (
+        <span className={cn("player-ready", player.ready ? "player-ready-on" : "player-ready-off")}>
+          {player.ready ? "Ready" : "Waiting"}
+        </span>
+      ) : (
+        <div className="player-progress" aria-label={`${homeCount} of 4 tokens home`}>
+          {progress.map((value, index) => (
+            <span key={index} className="player-progress-track">
+              <span className={cn("player-progress-fill", colorClasses(player.color))} style={{ width: `${value}%` }} />
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SERVER_CONFIGURED = Boolean(import.meta.env.VITE_SERVER_URL) || import.meta.env.DEV;
 const SERVER = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -116,6 +175,16 @@ function botReducer(state: BotState, action: BotAction): BotState {
         gs.consecutiveSixes = 0;
         const idx = gs.players.findIndex((p) => p.id === gs.currentPlayerId);
         gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
+      } else {
+        const current = gs.players.find((player) => player.id === gs.currentPlayerId);
+        if (current && legalTokenIds(current, action.result).length === 0) {
+          gs.dice = null;
+          if (action.result !== 6) {
+            const idx = gs.players.findIndex((player) => player.id === gs.currentPlayerId);
+            gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
+            gs.consecutiveSixes = 0;
+          }
+        }
       }
       return { ...state, gameState: gs };
     }
@@ -477,27 +546,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
             </div>
             <div className="space-y-3">
               {gs.players.map((p) => (
-                <div key={p.id} className={cn(
-                  "flex items-center justify-between p-3 rounded-2xl transition-all border",
-                  p.id === gs.currentPlayerId ? "bg-slate-800 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]" : "bg-slate-900/50 border-transparent"
-                )}>
-                  <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold text-white",
-                      p.color === 'red' ? 'bg-red-500' : p.color === 'green' ? 'bg-green-500' : p.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500'
-                    )}>
-                      {p.name[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm">{p.name}</div>
-                      <div className="text-xs text-slate-500">{p.tokens.filter(t => t.position === 56).length}/4 Home</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    {p.tokens.map((t, i) => (
-                      <div key={i} className={cn("w-2 h-2 rounded-full", t.position === 56 ? "bg-yellow-400" : "bg-slate-700")} />
-                    ))}
-                  </div>
-                </div>
+                <PlayerCard key={p.id} player={p} active={p.id === gs.currentPlayerId} isYou={p.id === HUMAN_ID} />
               ))}
             </div>
           </div>
@@ -653,15 +702,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-3">
               {snapshot.state.players.map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-2xl border border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("w-3 h-3 rounded-full", p.color === 'red' ? 'bg-red-500' : p.color === 'green' ? 'bg-green-500' : p.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500')} />
-                    <span className="text-sm font-medium">{p.name} {p.id === me?.id && "(You)"}</span>
-                  </div>
-                  <span className={cn("text-[10px] font-bold px-2 py-1 rounded-full", p.ready ? "bg-green-500/20 text-green-400" : "bg-slate-700 text-slate-400")}>
-                    {p.ready ? "READY" : "WAITING"}
-                  </span>
-                </div>
+                <PlayerCard key={p.id} player={p} active={false} isYou={p.id === me?.id} showReady compact />
               ))}
             </div>
             <div className="grid grid-cols-4 gap-3">
@@ -802,22 +843,12 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
             </div>
             <div className="space-y-3">
               {snapshot.state.players.map((p) => (
-                <div key={p.id} className={cn(
-                  "flex items-center justify-between p-3 rounded-2xl transition-all border",
-                  p.id === snapshot.state.currentPlayerId ? "bg-slate-800 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]" : "bg-slate-900/50 border-transparent"
-                )}>
-                  <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold text-white",
-                      p.color === 'red' ? 'bg-red-500' : p.color === 'green' ? 'bg-green-500' : p.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500'
-                    )}>
-                      {p.name[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm">{p.name}</div>
-                      <div className="text-xs text-slate-500">{p.connected ? `${p.tokens.filter(t => t.position === 56).length}/4 Home` : "Reconnecting..."}</div>
-                    </div>
-                  </div>
-                </div>
+                <PlayerCard
+                  key={p.id}
+                  player={p}
+                  active={p.id === snapshot.state.currentPlayerId}
+                  isYou={p.id === me?.id}
+                />
               ))}
             </div>
           </div>
