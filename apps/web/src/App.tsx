@@ -86,14 +86,14 @@ function PlayerCard({
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="truncate font-bold text-sm">{player.name}</span>
+            <span className="truncate font-bold text-sm text-slate-800">{player.name}</span>
             {isYou && <span className="player-you">You</span>}
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             <span
               className={cn(
                 "player-status-dot",
-                player.connected ? "bg-emerald-400" : "bg-amber-400",
+                player.connected ? "bg-emerald-500" : "bg-amber-500",
               )}
             />
             <span>
@@ -291,19 +291,19 @@ function Dice3D({
 
   return (
     <motion.button
-      whileHover={!disabled ? { scale: 1.1 } : {}}
-      whileTap={!disabled ? { scale: 0.9 } : {}}
+      whileHover={!disabled ? { scale: 1.06 } : {}}
+      whileTap={!disabled ? { scale: 0.94 } : {}}
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "dice-cube relative w-20 h-20 bg-white text-slate-900 rounded-2xl shadow-xl flex items-center justify-center text-4xl font-bold transition-all",
-        rolling && "animate-bounce",
-        disabled && "opacity-50 cursor-not-allowed grayscale",
+        "dice-cube relative w-20 h-20 bg-gradient-to-b from-white to-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-[0_8px_20px_rgba(0,0,0,0.06),inset_0_-2px_4px_rgba(0,0,0,0.03)] flex items-center justify-center text-4xl font-black transition-all",
+        rolling && "animate-bounce shadow-[0_12px_28px_rgba(0,0,0,0.12)] ring-4 ring-blue-500/20",
+        disabled && "opacity-40 cursor-not-allowed grayscale",
       )}
     >
       {["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][display - 1]}
       {rolling && (
-        <div className="absolute inset-0 rounded-2xl bg-white/30 animate-pulse" />
+        <div className="absolute inset-0 rounded-2xl bg-blue-500/10 animate-pulse" />
       )}
     </motion.button>
   );
@@ -448,144 +448,196 @@ function Board({
 
   return (
     <div className="board-stage">
-      <div className="board-surface relative w-full h-full bg-slate-700 rounded-lg overflow-hidden grid grid-cols-15 grid-rows-15 gap-px">
-        {/* Corner Home Zones */}
+      <div className="board-surface relative w-full h-full bg-[#FAFAFC] rounded-2xl overflow-hidden shadow-inner border border-slate-200/80">
+        {/* Corner Home Bases (Yards) */}
         {(["red", "green", "yellow", "blue"] as Color[]).map((color) => {
           const player = getPlayerByColor(color);
           const yardToks = player ? (yardTokens.get(player.id) ?? []) : [];
-          const zoneStyle = {
-            red: "top-0 left-0 w-[40%] h-[40%] bg-red-500/20",
-            green: "top-0 right-0 w-[40%] h-[40%] bg-green-500/20",
-            blue: "bottom-0 left-0 w-[40%] h-[40%] bg-blue-500/20",
-            yellow: "bottom-0 right-0 w-[40%] h-[40%] bg-yellow-500/20",
+          const zoneConfig = {
+            red: {
+              pos: "top-0 left-0",
+              bg: "bg-red-500/10 border-red-500/30",
+              pocketBg: "bg-red-50 border-red-200",
+              text: "text-red-600",
+              dot: "bg-red-500",
+              label: "RED BASE",
+              rounded: "rounded-tl-2xl rounded-tr-lg rounded-bl-lg rounded-br-2xl",
+              tokenGrad: "bg-gradient-to-br from-red-500 to-red-600 text-white",
+              ring: "ring-red-400 shadow-[0_0_12px_rgba(239,68,68,0.7)]",
+            },
+            green: {
+              pos: "top-0 right-0",
+              bg: "bg-green-500/10 border-green-500/30",
+              pocketBg: "bg-green-50 border-green-200",
+              text: "text-green-600",
+              dot: "bg-green-500",
+              label: "GREEN BASE",
+              rounded: "rounded-tl-lg rounded-tr-2xl rounded-bl-2xl rounded-br-lg",
+              tokenGrad: "bg-gradient-to-br from-green-500 to-green-600 text-white",
+              ring: "ring-green-400 shadow-[0_0_12px_rgba(34,197,94,0.7)]",
+            },
+            yellow: {
+              pos: "bottom-0 right-0",
+              bg: "bg-amber-500/15 border-amber-500/30",
+              pocketBg: "bg-amber-50 border-amber-200",
+              text: "text-amber-700",
+              dot: "bg-amber-500",
+              label: "YELLOW BASE",
+              rounded: "rounded-tl-2xl rounded-tr-lg rounded-bl-lg rounded-br-2xl",
+              tokenGrad: "bg-gradient-to-br from-amber-400 to-amber-500 text-amber-950",
+              ring: "ring-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.7)]",
+            },
+            blue: {
+              pos: "bottom-0 left-0",
+              bg: "bg-blue-500/10 border-blue-500/30",
+              pocketBg: "bg-blue-50 border-blue-200",
+              text: "text-blue-600",
+              dot: "bg-blue-500",
+              label: "BLUE BASE",
+              rounded: "rounded-tl-lg rounded-tr-2xl rounded-bl-2xl rounded-br-lg",
+              tokenGrad: "bg-gradient-to-br from-blue-500 to-blue-600 text-white",
+              ring: "ring-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.7)]",
+            },
           }[color];
 
           return (
             <div
               key={color}
-              className={cn(
-                "board-zone absolute p-4 rounded-xl border-2 border-white/10",
-                zoneStyle,
-              )}
+              className={cn("absolute w-[40%] h-[40%] p-1.5 md:p-2.5", zoneConfig.pos)}
             >
-              <div className="text-[10px] font-bold opacity-50 uppercase mb-2">
-                {color}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[0, 1, 2, 3].map((slot) => {
-                  const tok = yardToks[slot];
-                  const isLegal =
-                    tok &&
-                    player?.id === currentPlayerId &&
-                    legalIds.includes(tok.id);
-                  return (
-                    <div
-                      key={slot}
-                      className="aspect-square bg-black/20 rounded-full flex items-center justify-center"
-                    >
-                      {tok && (
-                        <motion.button
-                          whileHover={isLegal ? { scale: 1.2 } : {}}
-                          onClick={() => isLegal && onMove(tok.id)}
-                          className={cn(
-                            "token-3d w-full h-full rounded-full text-white font-bold text-xs shadow-lg transition-all",
-                            color === "red"
-                              ? "bg-red-500"
-                              : color === "green"
-                                ? "bg-green-500"
-                                : color === "yellow"
-                                  ? "bg-yellow-500"
-                                  : "bg-blue-500",
-                            isLegal &&
-                              "ring-4 ring-white animate-pulse scale-110",
-                          )}
-                        >
-                          {tok.id + 1}
-                        </motion.button>
-                      )}
-                    </div>
-                  );
-                })}
+              <div
+                className={cn(
+                  "w-full h-full p-2 md:p-3 border-2 flex flex-col justify-between shadow-sm",
+                  zoneConfig.bg,
+                  zoneConfig.rounded,
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("w-2 h-2 rounded-full shadow-sm", zoneConfig.dot)} />
+                    <span className={cn("text-[9px] md:text-[11px] font-black uppercase tracking-wider", zoneConfig.text)}>
+                      {zoneConfig.label}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">
+                    {player?.id === HUMAN_ID ? "YOU" : player?.name ?? color}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 md:gap-2.5 p-1 md:p-2 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-100 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)] place-items-center">
+                  {[0, 1, 2, 3].map((slot) => {
+                    const tok = yardToks[slot];
+                    const isLegal =
+                      tok &&
+                      player?.id === currentPlayerId &&
+                      legalIds.includes(tok.id);
+                    return (
+                      <div
+                        key={slot}
+                        className={cn(
+                          "w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full border shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] flex items-center justify-center transition-all",
+                          zoneConfig.pocketBg,
+                        )}
+                      >
+                        {tok && (
+                          <motion.button
+                            whileHover={isLegal ? { scale: 1.15 } : {}}
+                            whileTap={isLegal ? { scale: 0.95 } : {}}
+                            onClick={() => isLegal && onMove(tok.id)}
+                            disabled={!isLegal}
+                            className={cn(
+                              "w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full font-bold text-[10px] md:text-xs shadow-md flex items-center justify-center transition-all",
+                              zoneConfig.tokenGrad,
+                              isLegal &&
+                                cn(
+                                  "ring-4 ring-offset-1 animate-pulse cursor-pointer scale-110",
+                                  zoneConfig.ring,
+                                ),
+                              !isLegal && "cursor-default opacity-85",
+                            )}
+                          >
+                            {tok.id + 1}
+                          </motion.button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
         })}
 
-        {/* Center Finish */}
-        <div className="board-center-3d absolute inset-[40%] flex items-center justify-center bg-slate-900 rounded-2xl border-2 border-slate-700 shadow-inner">
-          <div className="text-center">
-            <div className="text-3xl mb-1">★</div>
-            <div className="text-[10px] font-black text-slate-500">FINISH</div>
+        {/* Center Finish (Apple 4-triangle converging finish) */}
+        <div className="absolute inset-[40%] rounded-xl overflow-hidden shadow-inner border border-slate-200/80 bg-white">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            {/* Top Green triangle */}
+            <polygon points="0,0 100,0 50,50" fill="#34C759" fillOpacity="0.85" />
+            {/* Right Yellow triangle */}
+            <polygon points="100,0 100,100 50,50" fill="#FFCC00" fillOpacity="0.9" />
+            {/* Bottom Blue triangle */}
+            <polygon points="100,100 0,100 50,50" fill="#007AFF" fillOpacity="0.85" />
+            {/* Left Red triangle */}
+            <polygon points="0,100 0,0 50,50" fill="#FF3B30" fillOpacity="0.85" />
+            {/* Central circle */}
+            <circle cx="50" cy="50" r="22" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="2" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-lg md:text-2xl leading-none">🏆</span>
+            <span className="text-[8px] md:text-[9px] font-black tracking-widest text-slate-700 mt-0.5">
+              HOME
+            </span>
           </div>
         </div>
 
-        {/* Track Cells */}
-        {TRACK_COORDS.map((coord, i) => {
-          const cellId = i + 1;
-          const tokensOnCell = cells.get(cellId) ?? [];
-          const isSafe = SAFE_CELLS.has(cellId);
-          return (
+        {/* Decorative Runway Guides */}
+        {[
+          { color: "red", coords: [[1, 7], [2, 7]], bg: "bg-red-50 border-red-200 text-red-300", arrow: "→" },
+          { color: "green", coords: [[7, 1], [7, 2]], bg: "bg-green-50 border-green-200 text-green-300", arrow: "↓" },
+          { color: "yellow", coords: [[13, 7], [12, 7]], bg: "bg-amber-50 border-amber-200 text-amber-300", arrow: "←" },
+          { color: "blue", coords: [[7, 13], [7, 12]], bg: "bg-blue-50 border-blue-200 text-blue-300", arrow: "↑" },
+        ].flatMap(({ coords, bg, arrow }) =>
+          coords.map(([x, y]) => (
             <div
-              key={cellId}
+              key={`guide-${x}-${y}`}
               className={cn(
-                "absolute w-[6.66%] h-[6.66%] border border-slate-700/30 flex items-center justify-center",
-                isSafe && "bg-white/5",
+                "absolute w-[6.6667%] h-[6.6667%] border rounded-md flex items-center justify-center font-bold text-xs select-none",
+                bg,
               )}
               style={{
-                left: `${(coord[0] * 100) / 15}%`,
-                top: `${(coord[1] * 100) / 15}%`,
+                left: `${(x * 100) / 15}%`,
+                top: `${(y * 100) / 15}%`,
               }}
             >
-              {isSafe && (
-                <div className="absolute inset-0 flex items-center justify-center text-white/10 text-xs">
-                  ⭐
-                </div>
-              )}
-              <div className="flex flex-wrap gap-0.5 justify-center items-center">
-                {tokensOnCell.map(({ player, token }) => {
-                  const isLegal =
-                    player.id === currentPlayerId &&
-                    legalIds.includes(token.id);
-                  return (
-                    <motion.button
-                      key={`${player.id}-${token.id}`}
-                      whileHover={isLegal ? { scale: 1.2 } : {}}
-                      onClick={() => isLegal && onMove(token.id)}
-                      className={cn(
-                        "token-3d w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
-                        player.color === "red"
-                          ? "bg-red-500"
-                          : player.color === "green"
-                            ? "bg-green-500"
-                            : player.color === "yellow"
-                              ? "bg-yellow-500"
-                              : "bg-blue-500",
-                        isLegal && "ring-2 ring-white animate-pulse scale-125",
-                      )}
-                    >
-                      {token.id + 1}
-                    </motion.button>
-                  );
-                })}
-              </div>
+              {arrow}
             </div>
-          );
-        })}
+          )),
+        )}
 
-        {/* Home Runway Cells */}
+        {/* Home Runway Active Cells (53, 54, 55) */}
         {(["red", "green", "yellow", "blue"] as Color[]).map((color) => {
+          const laneStyle = {
+            red: "bg-red-500 text-white border-red-600 shadow-sm",
+            green: "bg-green-500 text-white border-green-600 shadow-sm",
+            yellow: "bg-amber-400 text-amber-950 border-amber-500 shadow-sm",
+            blue: "bg-blue-500 text-white border-blue-600 shadow-sm",
+          }[color];
+
           return [53, 54, 55].map((pos) => {
             const list = laneTokens.get(`${color}-${pos}`) ?? [];
             return (
               <div
                 key={`${color}-${pos}`}
-                className="absolute w-[6.66%] h-[6.66%] border border-slate-700/30 flex items-center justify-center bg-white/5"
+                className={cn(
+                  "absolute w-[6.6667%] h-[6.6667%] border rounded-md flex items-center justify-center transition-all",
+                  laneStyle,
+                )}
                 style={{
                   left: `${(HOME_LANE_COORDS[color][pos - 53][0] * 100) / 15}%`,
                   top: `${(HOME_LANE_COORDS[color][pos - 53][1] * 100) / 15}%`,
                 }}
               >
-                <div className="flex flex-wrap gap-0.5 justify-center items-center">
+                <div className="flex flex-wrap gap-0.5 justify-center items-center w-full h-full p-0.5">
                   {list.map(({ player, token }) => {
                     const isLegal =
                       player.id === currentPlayerId &&
@@ -593,19 +645,21 @@ function Board({
                     return (
                       <motion.button
                         key={`${player.id}-${token.id}`}
-                        whileHover={isLegal ? { scale: 1.2 } : {}}
+                        whileHover={isLegal ? { scale: 1.25 } : {}}
                         onClick={() => isLegal && onMove(token.id)}
+                        disabled={!isLegal}
                         className={cn(
-                          "token-3d w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
+                          "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full font-bold text-[9px] md:text-xs shadow-md flex items-center justify-center transition-all",
                           player.color === "red"
-                            ? "bg-red-500"
+                            ? "bg-red-600 text-white border border-white/60"
                             : player.color === "green"
-                              ? "bg-green-500"
+                              ? "bg-green-600 text-white border border-white/60"
                               : player.color === "yellow"
-                                ? "bg-yellow-500"
-                                : "bg-blue-500",
+                                ? "bg-amber-300 text-amber-950 border border-white/60"
+                                : "bg-blue-600 text-white border border-white/60",
                           isLegal &&
-                            "ring-2 ring-white animate-pulse scale-125",
+                            "ring-4 ring-offset-1 ring-white shadow-[0_0_12px_rgba(255,255,255,0.9)] animate-bounce z-20 cursor-pointer",
+                          !isLegal && "cursor-default",
                         )}
                       >
                         {token.id + 1}
@@ -616,6 +670,94 @@ function Board({
               </div>
             );
           });
+        })}
+
+        {/* Track Cells (1 to 52) */}
+        {TRACK_COORDS.map((coord, i) => {
+          const cellId = i + 1;
+          const tokensOnCell = cells.get(cellId) ?? [];
+          const isSafe = SAFE_CELLS.has(cellId);
+
+          const isStartRed = cellId === 1;
+          const isStartGreen = cellId === 14;
+          const isStartYellow = cellId === 27;
+          const isStartBlue = cellId === 40;
+          const isStart = isStartRed || isStartGreen || isStartYellow || isStartBlue;
+
+          const cellBg = isStartRed
+            ? "bg-red-500 text-white font-bold border-red-600"
+            : isStartGreen
+              ? "bg-green-500 text-white font-bold border-green-600"
+              : isStartYellow
+                ? "bg-amber-400 text-amber-950 font-bold border-amber-500"
+                : isStartBlue
+                  ? "bg-blue-500 text-white font-bold border-blue-600"
+                  : isSafe
+                    ? "bg-amber-50/90 border-amber-200"
+                    : "bg-white border-slate-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
+
+          return (
+            <div
+              key={cellId}
+              className={cn(
+                "absolute w-[6.6667%] h-[6.6667%] border rounded-md flex items-center justify-center transition-all",
+                cellBg,
+              )}
+              style={{
+                left: `${(coord[0] * 100) / 15}%`,
+                top: `${(coord[1] * 100) / 15}%`,
+              }}
+            >
+              {isSafe && !isStart && tokensOnCell.length === 0 && (
+                <div className="text-[10px] md:text-xs text-amber-500 select-none">
+                  ⭐
+                </div>
+              )}
+              {isStart && tokensOnCell.length === 0 && (
+                <div className="text-[9px] md:text-[11px] font-black leading-none opacity-80 select-none">
+                  ➔
+                </div>
+              )}
+              <div className="flex flex-wrap gap-0.5 justify-center items-center w-full h-full p-0.5">
+                {tokensOnCell.map(({ player, token }) => {
+                  const isLegal =
+                    player.id === currentPlayerId &&
+                    legalIds.includes(token.id);
+
+                  const colorBg = {
+                    red: "bg-gradient-to-br from-red-500 to-red-600 text-white",
+                    green: "bg-gradient-to-br from-green-500 to-green-600 text-white",
+                    yellow: "bg-gradient-to-br from-amber-400 to-amber-500 text-amber-950",
+                    blue: "bg-gradient-to-br from-blue-500 to-blue-600 text-white",
+                  }[player.color];
+
+                  const sizeClass =
+                    tokensOnCell.length === 1
+                      ? "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-[9px] md:text-[11px]"
+                      : "w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-[7px] md:text-[8px]";
+
+                  return (
+                    <motion.button
+                      key={`${player.id}-${token.id}`}
+                      whileHover={isLegal ? { scale: 1.25 } : {}}
+                      onClick={() => isLegal && onMove(token.id)}
+                      disabled={!isLegal}
+                      className={cn(
+                        "rounded-full font-bold shadow-md flex items-center justify-center transition-all",
+                        colorBg,
+                        sizeClass,
+                        isLegal &&
+                          "ring-4 ring-offset-1 ring-blue-500 shadow-[0_0_12px_rgba(0,122,255,0.9)] animate-bounce z-20 cursor-pointer",
+                        !isLegal && "cursor-default",
+                      )}
+                    >
+                      {token.id + 1}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          );
         })}
       </div>
     </div>
@@ -701,22 +843,22 @@ function BotGame({ onExit }: { onExit: () => void }) {
     phase === "finished" ? gs.players.find((p) => p.id === gs.winnerId) : null;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 flex flex-col items-center">
-      <header className="w-full max-w-6xl flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-[#F5F5F7] text-slate-900 p-4 md:p-8 flex flex-col items-center">
+      <header className="w-full max-w-6xl flex justify-between items-center mb-8 px-6 py-3.5 bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-sm">
         <button
           onClick={onExit}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all"
         >
-          <LogOut size={16} /> Exit Game
+          <LogOut size={15} /> Exit Game
         </button>
-        <div className="flex items-center gap-3 text-2xl font-black tracking-tighter">
-          <span className="text-4xl">🎲</span> LUDO
-          <span className="text-blue-500">FRIENDS</span>
+        <div className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900">
+          <span className="text-2xl">🎲</span> Ludo
+          <span className="text-blue-600">Friends</span>
         </div>
-        <div className="flex items-center gap-4 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
+        <div className="flex items-center gap-2.5 bg-slate-100/90 px-4 py-2 rounded-xl border border-slate-200/80">
           <div
             className={cn(
-              "w-3 h-3 rounded-full animate-pulse",
+              "w-2.5 h-2.5 rounded-full animate-pulse",
               currentPlayer?.color === "red"
                 ? "bg-red-500"
                 : currentPlayer?.color === "green"
@@ -726,7 +868,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
                     : "bg-blue-500",
             )}
           />
-          <span className="text-sm font-medium">
+          <span className="text-xs font-semibold text-slate-700">
             {isMyTurn ? "Your Turn" : `${currentPlayer?.name}'s Turn`}
           </span>
         </div>
@@ -735,20 +877,20 @@ function BotGame({ onExit }: { onExit: () => void }) {
       <AnimatePresence>
         {winner && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4"
           >
-            <div className="bg-slate-900 p-12 rounded-3xl border-4 border-yellow-500 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)]">
+            <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-2xl text-center max-w-sm w-full">
               <Trophy
-                size={80}
-                className="mx-auto text-yellow-500 mb-4 animate-bounce"
+                size={64}
+                className="mx-auto text-amber-500 mb-4 animate-bounce"
               />
-              <h2 className="text-5xl font-black mb-2">
+              <h2 className="text-3xl font-black text-slate-900 mb-2">
                 {winner?.id === HUMAN_ID ? "YOU WIN!" : `${winner?.name} WINS!`}
               </h2>
-              <p className="text-slate-400 mb-8 text-lg">
+              <p className="text-slate-500 mb-6 text-sm">
                 A legendary victory! 🎲
               </p>
               <button
@@ -756,7 +898,7 @@ function BotGame({ onExit }: { onExit: () => void }) {
                   window.localStorage.removeItem(OFFLINE_STORAGE_KEY);
                   onExit();
                 }}
-                className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all transform hover:scale-105"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-md"
               >
                 New Game
               </button>
@@ -779,18 +921,18 @@ function BotGame({ onExit }: { onExit: () => void }) {
         </div>
 
         <aside className="lg:col-span-5 space-y-6">
-          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
-            <div className="flex items-center gap-2 mb-6 text-slate-400 uppercase text-xs font-bold tracking-widest">
+          <div className="bg-white/85 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+            <div className="flex items-center gap-2 mb-6 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
               <Dice5 size={14} /> Game Controls
             </div>
-            <div className="flex flex-col items-center gap-6">
+            <div className="flex flex-col items-center gap-5">
               <Dice3D
                 value={gs.dice}
                 rolling={rolling}
                 onClick={rollDice}
                 disabled={!isMyTurn || gs.dice !== null || rolling}
               />
-              <p className="text-center text-slate-400 italic">
+              <p className="text-center text-sm font-medium text-slate-600 bg-slate-50 border border-slate-200/60 p-3 rounded-xl w-full">
                 {isMyTurn
                   ? gs.dice
                     ? legal.length > 0
@@ -812,11 +954,11 @@ function BotGame({ onExit }: { onExit: () => void }) {
             </div>
           </div>
 
-          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
-            <div className="flex items-center gap-2 mb-6 text-slate-400 uppercase text-xs font-bold tracking-widest">
-              <Users size={14} /> Leaderboard
+          <div className="bg-white/85 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
+              <Users size={14} /> Players
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {gs.players.map((p) => (
                 <PlayerCard
                   key={p.id}
@@ -926,22 +1068,22 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 
   if (!snapshot) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl relative">
+      <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white border border-slate-200/80 p-8 rounded-3xl shadow-xl relative">
           <button
             onClick={onExit}
-            className="absolute -top-12 left-0 text-slate-400 hover:text-white flex items-center gap-2 text-sm"
+            className="absolute -top-10 left-0 text-slate-500 hover:text-slate-800 flex items-center gap-2 text-sm font-medium"
           >
             <LogOut size={14} /> Back to Menu
           </button>
           <div className="text-center mb-8">
-            <p className="text-blue-500 font-bold text-xs uppercase tracking-widest mb-2">
+            <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-2">
               Multiplayer
             </p>
-            <h2 className="text-3xl font-black">Join the Race</h2>
+            <h2 className="text-3xl font-black text-slate-900">Join the Race</h2>
           </div>
-          <div className="space-y-6">
-            <div className="space-y-2">
+          <div className="space-y-5">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 uppercase ml-1">
                 Your Name
               </label>
@@ -949,45 +1091,45 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Maya"
-                className="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none transition-all"
+                className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none text-slate-900 font-medium transition-all"
               />
             </div>
             <button
               disabled={!name.trim() || busy || !socket.connected}
               onClick={create}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 font-bold rounded-xl transition-all transform hover:scale-[1.02]"
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold rounded-xl transition-all shadow-md transform hover:scale-[1.01]"
             >
               🏠 Create a Room
             </button>
-            <div className="flex items-center gap-4 py-2">
-              <div className="h-px bg-slate-800 flex-1" />
-              <span className="text-xs text-slate-600 font-bold uppercase">
+            <div className="flex items-center gap-4 py-1">
+              <div className="h-px bg-slate-200 flex-1" />
+              <span className="text-xs text-slate-400 font-bold uppercase">
                 or join
               </span>
-              <div className="h-px bg-slate-800 flex-1" />
+              <div className="h-px bg-slate-200 flex-1" />
             </div>
             <div className="flex gap-2">
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="ABC123"
-                className="flex-1 bg-slate-800 border border-slate-700 p-3 rounded-xl uppercase font-mono tracking-widest outline-none"
+                className="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl uppercase font-mono tracking-widest text-slate-900 outline-none font-bold"
               />
               <button
                 disabled={
                   !name.trim() || code.length !== 6 || busy || !socket.connected
                 }
                 onClick={join}
-                className="px-6 py-3 bg-slate-700 hover:bg-slate-600 font-bold rounded-xl transition-all"
+                className="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white font-bold rounded-xl transition-all"
               >
                 Join
               </button>
             </div>
             {error && (
-              <p className="text-red-400 text-center text-sm">{error}</p>
+              <p className="text-red-500 text-center text-sm font-medium">{error}</p>
             )}
             {connection && (
-              <p className="text-slate-500 text-center text-xs italic">
+              <p className="text-slate-400 text-center text-xs italic">
                 {connection}
               </p>
             )}
@@ -1003,38 +1145,38 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
         if (!r.ok) setError(r.error.message);
       });
     return (
-      <div className="min-h-screen bg-slate-950 p-4 md:p-8 flex flex-col items-center">
-        <header className="w-full max-w-6xl flex justify-between items-center mb-12">
+      <div className="min-h-screen bg-[#F5F5F7] p-4 md:p-8 flex flex-col items-center">
+        <header className="w-full max-w-6xl flex justify-between items-center mb-8 px-6 py-3.5 bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-sm">
           <button
             onClick={onExit}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-semibold text-xs"
           >
-            <LogOut size={16} /> Exit Lobby
+            <LogOut size={15} /> Exit Lobby
           </button>
           <div className="text-center">
-            <span className="text-xs font-bold text-slate-500 uppercase block tracking-widest">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">
               Room Code
             </span>
-            <strong className="text-2xl font-black tracking-widest text-blue-400">
+            <strong className="text-2xl font-black tracking-widest text-blue-600">
               {snapshot.code}
             </strong>
           </div>
           <button
             onClick={() => navigator.clipboard.writeText(snapshot.code)}
-            className="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-semibold text-xs"
           >
-            📋 Copy
+            📋 Copy Code
           </button>
         </header>
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl">
-          <div className="text-center mb-8">
-            <p className="text-xs font-bold text-slate-500 uppercase mb-1">
+        <div className="w-full max-w-md bg-white border border-slate-200/80 p-8 rounded-3xl shadow-xl">
+          <div className="text-center mb-6">
+            <p className="text-xs font-bold text-slate-400 uppercase mb-1">
               Lobby • {snapshot.state.players.length}/4 Players
             </p>
-            <h2 className="text-3xl font-black">Choose Color</h2>
+            <h2 className="text-2xl font-black text-slate-900">Choose Color</h2>
           </div>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-3">
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 gap-2.5">
               {snapshot.state.players.map((p) => (
                 <PlayerCard
                   key={p.id}
@@ -1055,16 +1197,16 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                   )}
                   onClick={() => choose(color)}
                   className={cn(
-                    "h-12 rounded-xl transition-all transform hover:scale-110",
+                    "h-12 rounded-xl transition-all transform hover:scale-105 shadow-sm",
                     color === "red"
                       ? "bg-red-500"
                       : color === "green"
                         ? "bg-green-500"
                         : color === "yellow"
-                          ? "bg-yellow-500"
+                          ? "bg-amber-400"
                           : "bg-blue-500",
                     me?.color === color
-                      ? "ring-4 ring-white scale-110"
+                      ? "ring-4 ring-offset-2 ring-blue-500 scale-105"
                       : "opacity-60",
                     "disabled:opacity-20 disabled:cursor-not-allowed",
                   )}
@@ -1078,10 +1220,10 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                 })
               }
               className={cn(
-                "w-full py-4 font-bold rounded-2xl transition-all transform hover:scale-[1.02]",
+                "w-full py-3.5 font-bold rounded-xl transition-all shadow-md",
                 me?.ready
-                  ? "bg-green-600 hover:bg-green-500"
-                  : "bg-blue-600 hover:bg-blue-500",
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                  : "bg-blue-600 hover:bg-blue-500 text-white",
               )}
             >
               {me?.ready ? "✓ Ready!" : "Ready Up"}
@@ -1097,19 +1239,19 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                     if (!r.ok) setError(r.error.message);
                   })
                 }
-                className="w-full py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl disabled:opacity-50 transition-all"
+                className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold rounded-xl disabled:opacity-40 transition-all shadow-md"
               >
                 Start Game
               </button>
             )}
             <button
               onClick={() => socket.emit("leaveRoom", () => onExit())}
-              className="w-full py-2 text-slate-500 text-sm hover:text-white transition-colors"
+              className="w-full py-2 text-slate-400 text-xs font-semibold hover:text-slate-700 transition-colors"
             >
               Leave Room
             </button>
             {error && (
-              <p className="text-red-400 text-center text-sm">{error}</p>
+              <p className="text-red-500 text-center text-sm font-medium">{error}</p>
             )}
           </div>
         </div>
@@ -1134,28 +1276,28 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 flex flex-col items-center">
-      <header className="w-full max-w-6xl flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-[#F5F5F7] text-slate-900 p-4 md:p-8 flex flex-col items-center">
+      <header className="w-full max-w-6xl flex justify-between items-center mb-8 px-6 py-3.5 bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-sm">
         <button
           onClick={onExit}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors font-semibold text-xs"
         >
-          <LogOut size={16} /> Exit
+          <LogOut size={15} /> Exit
         </button>
-        <div className="flex items-center gap-3 text-2xl font-black tracking-tighter">
-          <span className="text-4xl">🎲</span> LUDO
-          <span className="text-blue-500">FRIENDS</span>
+        <div className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900">
+          <span className="text-2xl">🎲</span> Ludo
+          <span className="text-blue-600">Friends</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="bg-slate-800 px-4 py-2 rounded-full border border-slate-700 flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-500 uppercase">
+          <div className="bg-slate-100/90 px-4 py-2 rounded-xl border border-slate-200/80 flex items-center gap-2.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase">
               Timer
             </span>
-            <strong className="text-xl font-mono">{seconds}s</strong>
+            <strong className="text-lg font-mono text-slate-800">{seconds}s</strong>
           </div>
           <button
             onClick={() => setSoundOn(!soundOn)}
-            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors text-sm"
           >
             {soundOn ? "🔊" : "🔇"}
           </button>
@@ -1169,7 +1311,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-xl"
+              className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-xl text-sm"
             >
               {toast}
             </motion.div>
@@ -1178,21 +1320,21 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
       </div>
 
       {snapshot.state.winnerId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 p-12 rounded-3xl border-4 border-yellow-500 text-center shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4">
+          <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-2xl text-center max-w-sm w-full">
             <Trophy
-              size={80}
-              className="mx-auto text-yellow-500 mb-4 animate-bounce"
+              size={64}
+              className="mx-auto text-amber-500 mb-4 animate-bounce"
             />
-            <h2 className="text-5xl font-black mb-4">
+            <h2 className="text-3xl font-black text-slate-900 mb-3">
               {snapshot.state.winnerId === me?.id
                 ? "You Win!"
                 : `${snapshot.state.players.find((p) => p.id === snapshot.state.winnerId)?.name} Wins!`}
             </h2>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-3 justify-center">
               <button
                 onClick={() => socket.emit("leaveRoom", () => onExit())}
-                className="px-8 py-4 bg-slate-800 rounded-2xl font-bold hover:bg-slate-700 transition-all"
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all text-sm"
               >
                 Leave
               </button>
@@ -1203,7 +1345,7 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
                       if (!r.ok) setError(r.error.message);
                     })
                   }
-                  className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm shadow-md"
                 >
                   Play Again
                 </button>
@@ -1228,18 +1370,18 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
           />
         </div>
         <aside className="lg:col-span-5 space-y-6">
-          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
-            <div className="flex items-center gap-2 mb-6 text-slate-400 uppercase text-xs font-bold tracking-widest">
+          <div className="bg-white/85 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+            <div className="flex items-center gap-2 mb-6 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
               <Dice5 size={14} /> Game Control
             </div>
-            <div className="flex flex-col items-center gap-6">
+            <div className="flex flex-col items-center gap-5">
               <Dice3D
                 value={snapshot.state.dice}
                 rolling={rolling}
                 onClick={doRoll}
                 disabled={!current || snapshot.state.dice !== null || rolling}
               />
-              <p className="text-center text-slate-400 italic">
+              <p className="text-center text-sm font-medium text-slate-600 bg-slate-50 border border-slate-200/60 p-3 rounded-xl w-full">
                 {current
                   ? snapshot.state.dice
                     ? "Select a pulsing token!"
@@ -1248,11 +1390,11 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
               </p>
             </div>
           </div>
-          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
-            <div className="flex items-center gap-2 mb-6 text-slate-400 uppercase text-xs font-bold tracking-widest">
+          <div className="bg-white/85 backdrop-blur-xl p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+            <div className="flex items-center gap-2 mb-5 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
               <Users size={14} /> Online Players
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {snapshot.state.players.map((p) => (
                 <PlayerCard
                   key={p.id}
