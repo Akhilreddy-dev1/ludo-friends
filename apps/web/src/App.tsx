@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { io, type Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, User, Users, LogOut, Dice5, Crown, Info } from "lucide-react";
@@ -56,11 +63,23 @@ function PlayerCard({
   showReady?: boolean;
   compact?: boolean;
 }) {
-  const homeCount = player.tokens.filter((token) => token.position === 56).length;
-  const progress = player.tokens.map((token) => token.position === 56 ? 100 : Math.min(92, Math.round((token.position / 56) * 100)));
+  const homeCount = player.tokens.filter(
+    (token) => token.position === 56,
+  ).length;
+  const progress = player.tokens.map((token) =>
+    token.position === 56
+      ? 100
+      : Math.min(92, Math.round((token.position / 56) * 100)),
+  );
 
   return (
-    <div className={cn("player-card", active && "player-card-active", compact && "player-card-compact")}>
+    <div
+      className={cn(
+        "player-card",
+        active && "player-card-active",
+        compact && "player-card-compact",
+      )}
+    >
       <div className="flex min-w-0 items-center gap-3">
         <div className={cn("player-avatar", colorClasses(player.color))}>
           {player.name.slice(0, 1).toUpperCase()}
@@ -71,20 +90,45 @@ function PlayerCard({
             {isYou && <span className="player-you">You</span>}
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className={cn("player-status-dot", player.connected ? "bg-emerald-400" : "bg-amber-400")} />
-            <span>{player.connected ? (active ? "Playing now" : `${homeCount}/4 home`) : "Reconnecting…"}</span>
+            <span
+              className={cn(
+                "player-status-dot",
+                player.connected ? "bg-emerald-400" : "bg-amber-400",
+              )}
+            />
+            <span>
+              {player.connected
+                ? active
+                  ? "Playing now"
+                  : `${homeCount}/4 home`
+                : "Reconnecting…"}
+            </span>
           </div>
         </div>
       </div>
       {showReady ? (
-        <span className={cn("player-ready", player.ready ? "player-ready-on" : "player-ready-off")}>
+        <span
+          className={cn(
+            "player-ready",
+            player.ready ? "player-ready-on" : "player-ready-off",
+          )}
+        >
           {player.ready ? "Ready" : "Waiting"}
         </span>
       ) : (
-        <div className="player-progress" aria-label={`${homeCount} of 4 tokens home`}>
+        <div
+          className="player-progress"
+          aria-label={`${homeCount} of 4 tokens home`}
+        >
           {progress.map((value, index) => (
             <span key={index} className="player-progress-track">
-              <span className={cn("player-progress-fill", colorClasses(player.color))} style={{ width: `${value}%` }} />
+              <span
+                className={cn(
+                  "player-progress-fill",
+                  colorClasses(player.color),
+                )}
+                style={{ width: `${value}%` }}
+              />
             </span>
           ))}
         </div>
@@ -93,14 +137,20 @@ function PlayerCard({
   );
 }
 
-const SERVER_CONFIGURED = Boolean(import.meta.env.VITE_SERVER_URL) || import.meta.env.DEV;
+const SERVER_CONFIGURED =
+  Boolean(import.meta.env.VITE_SERVER_URL) || import.meta.env.DEV;
 const SERVER = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 type Mode = "menu" | "bot" | "multiplayer";
 const OFFLINE_STORAGE_KEY = "ludo-friends-offline-game";
 
 // ─── Bot AI Logic ──────────────────────────────────────────────────────────────────
-function scoreBotMove(state: GameState, botId: string, tokenId: number, roll: number): number {
+function scoreBotMove(
+  state: GameState,
+  botId: string,
+  tokenId: number,
+  roll: number,
+): number {
   const bot = state.players.find((p) => p.id === botId)!;
   const token = bot.tokens.find((t) => t.id === tokenId)!;
   let score = 0;
@@ -125,7 +175,10 @@ function pickBotToken(state: GameState, botId: string, roll: number): number {
   const legal = legalTokenIds(bot, roll);
   if (legal.length === 0) return -1;
   return legal.reduce((best, id) =>
-    scoreBotMove(state, botId, id, roll) > scoreBotMove(state, botId, best, roll) ? id : best
+    scoreBotMove(state, botId, id, roll) >
+    scoreBotMove(state, botId, best, roll)
+      ? id
+      : best,
   );
 }
 
@@ -145,11 +198,16 @@ const BOT_COLORS: Color[] = ["green", "yellow", "blue"];
 
 function makeBotInitialState(saved?: OfflineSession | null): BotState {
   if (saved?.humanId === HUMAN_ID && saved.state.players.length === 4) {
-    return { gameState: saved.state, phase: saved.state.phase === "finished" ? "finished" : "playing" };
+    return {
+      gameState: saved.state,
+      phase: saved.state.phase === "finished" ? "finished" : "playing",
+    };
   }
   const gs = createGameState();
   gs.players.push(createPlayer(HUMAN_ID, "You", "red"));
-  BOT_IDS.forEach((id, i) => gs.players.push(createPlayer(id, `Bot ${i + 1}`, BOT_COLORS[i])));
+  BOT_IDS.forEach((id, i) =>
+    gs.players.push(createPlayer(id, `Bot ${i + 1}`, BOT_COLORS[i])),
+  );
   gs.phase = "playing";
   gs.currentPlayerId = HUMAN_ID;
   return { gameState: gs, phase: "playing" };
@@ -157,7 +215,9 @@ function makeBotInitialState(saved?: OfflineSession | null): BotState {
 
 function loadOfflineState(): BotState {
   if (typeof window === "undefined") return makeBotInitialState();
-  const saved = decodeOfflineSession(window.localStorage.getItem(OFFLINE_STORAGE_KEY));
+  const saved = decodeOfflineSession(
+    window.localStorage.getItem(OFFLINE_STORAGE_KEY),
+  );
   return makeBotInitialState(saved);
 }
 
@@ -175,16 +235,6 @@ function botReducer(state: BotState, action: BotAction): BotState {
         gs.consecutiveSixes = 0;
         const idx = gs.players.findIndex((p) => p.id === gs.currentPlayerId);
         gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
-      } else {
-        const current = gs.players.find((player) => player.id === gs.currentPlayerId);
-        if (current && legalTokenIds(current, action.result).length === 0) {
-          gs.dice = null;
-          if (action.result !== 6) {
-            const idx = gs.players.findIndex((player) => player.id === gs.currentPlayerId);
-            gs.currentPlayerId = gs.players[(idx + 1) % gs.players.length].id;
-            gs.consecutiveSixes = 0;
-          }
-        }
       }
       return { ...state, gameState: gs };
     }
@@ -215,11 +265,24 @@ function botReducer(state: BotState, action: BotAction): BotState {
 
 // ─── Components ──────────────────────────────────────────────────────────────────
 
-function Dice3D({ value, rolling, onClick, disabled }: { value: number | null; rolling: boolean; onClick: () => void; disabled: boolean }) {
+function Dice3D({
+  value,
+  rolling,
+  onClick,
+  disabled,
+}: {
+  value: number | null;
+  rolling: boolean;
+  onClick: () => void;
+  disabled: boolean;
+}) {
   const [display, setDisplay] = useState(value ?? 1);
   useEffect(() => {
     if (rolling) {
-      const interval = setInterval(() => setDisplay(Math.floor(Math.random() * 6) + 1), 80);
+      const interval = setInterval(
+        () => setDisplay(Math.floor(Math.random() * 6) + 1),
+        80,
+      );
       return () => clearInterval(interval);
     } else if (value !== null) {
       setDisplay(value);
@@ -235,30 +298,116 @@ function Dice3D({ value, rolling, onClick, disabled }: { value: number | null; r
       className={cn(
         "dice-cube relative w-20 h-20 bg-white text-slate-900 rounded-2xl shadow-xl flex items-center justify-center text-4xl font-bold transition-all",
         rolling && "animate-bounce",
-        disabled && "opacity-50 cursor-not-allowed grayscale"
+        disabled && "opacity-50 cursor-not-allowed grayscale",
       )}
     >
       {["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][display - 1]}
-      {rolling && <div className="absolute inset-0 rounded-2xl bg-white/30 animate-pulse" />}
+      {rolling && (
+        <div className="absolute inset-0 rounded-2xl bg-white/30 animate-pulse" />
+      )}
     </motion.button>
   );
 }
 
 // Coordinates mapping for the board
-const TRACK_COORDS: readonly [number, number][] = [[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[14,7],[14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14],[6,14],[6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],[0,7],[0,6]];
+const TRACK_COORDS: readonly [number, number][] = [
+  [1, 6],
+  [2, 6],
+  [3, 6],
+  [4, 6],
+  [5, 6],
+  [6, 5],
+  [6, 4],
+  [6, 3],
+  [6, 2],
+  [6, 1],
+  [6, 0],
+  [7, 0],
+  [8, 0],
+  [8, 1],
+  [8, 2],
+  [8, 3],
+  [8, 4],
+  [8, 5],
+  [9, 6],
+  [10, 6],
+  [11, 6],
+  [12, 6],
+  [13, 6],
+  [14, 6],
+  [14, 7],
+  [14, 8],
+  [13, 8],
+  [12, 8],
+  [11, 8],
+  [10, 8],
+  [9, 8],
+  [8, 9],
+  [8, 10],
+  [8, 11],
+  [8, 12],
+  [8, 13],
+  [8, 14],
+  [7, 14],
+  [6, 14],
+  [6, 13],
+  [6, 12],
+  [6, 11],
+  [6, 10],
+  [6, 9],
+  [5, 8],
+  [4, 8],
+  [3, 8],
+  [2, 8],
+  [1, 8],
+  [0, 8],
+  [0, 7],
+  [0, 6],
+];
 const HOME_LANE_COORDS: Record<Color, readonly [number, number][]> = {
-  red: [[3, 7], [4, 7], [5, 7]], green: [[7, 3], [7, 4], [7, 5]],
-  yellow: [[11, 7], [10, 7], [9, 7]], blue: [[7, 11], [7, 10], [7, 9]],
+  red: [
+    [3, 7],
+    [4, 7],
+    [5, 7],
+  ],
+  green: [
+    [7, 3],
+    [7, 4],
+    [7, 5],
+  ],
+  yellow: [
+    [11, 7],
+    [10, 7],
+    [9, 7],
+  ],
+  blue: [
+    [7, 11],
+    [7, 10],
+    [7, 9],
+  ],
 };
 
-function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: Player[]; currentPlayerId: string | null; dice: number | null; legalIds: number[]; onMove: (tokenId: number) => void }) {
+function Board({
+  players,
+  currentPlayerId,
+  dice,
+  legalIds,
+  onMove,
+}: {
+  players: Player[];
+  currentPlayerId: string | null;
+  dice: number | null;
+  legalIds: number[];
+  onMove: (tokenId: number) => void;
+}) {
   const cells = useMemo(() => {
     const map = new Map<number, { player: Player; token: Token }[]>();
     players.forEach((player) =>
       player.tokens.forEach((token) => {
         const cell = publicCell(player.color, token.position);
-        if (cell !== null) map.set(cell, [...(map.get(cell) ?? []), { player, token }]);
-      })
+        if (cell !== null)
+          map.set(cell, [...(map.get(cell) ?? []), { player, token }]);
+      }),
     );
     return map;
   }, [players]);
@@ -294,16 +443,16 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
     return map;
   }, [players]);
 
-  const getPlayerByColor = (color: Color) => players.find((p) => p.color === color);
+  const getPlayerByColor = (color: Color) =>
+    players.find((p) => p.color === color);
 
   return (
     <div className="board-stage">
       <div className="board-surface relative w-full h-full bg-slate-700 rounded-lg overflow-hidden grid grid-cols-15 grid-rows-15 gap-px">
-
         {/* Corner Home Zones */}
         {(["red", "green", "yellow", "blue"] as Color[]).map((color) => {
           const player = getPlayerByColor(color);
-          const yardToks = player ? yardTokens.get(player.id) ?? [] : [];
+          const yardToks = player ? (yardTokens.get(player.id) ?? []) : [];
           const zoneStyle = {
             red: "top-0 left-0 w-[40%] h-[40%] bg-red-500/20",
             green: "top-0 right-0 w-[40%] h-[40%] bg-green-500/20",
@@ -312,22 +461,43 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
           }[color];
 
           return (
-            <div key={color} className={cn("board-zone absolute p-4 rounded-xl border-2 border-white/10", zoneStyle)}>
-              <div className="text-[10px] font-bold opacity-50 uppercase mb-2">{color}</div>
+            <div
+              key={color}
+              className={cn(
+                "board-zone absolute p-4 rounded-xl border-2 border-white/10",
+                zoneStyle,
+              )}
+            >
+              <div className="text-[10px] font-bold opacity-50 uppercase mb-2">
+                {color}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {[0, 1, 2, 3].map((slot) => {
                   const tok = yardToks[slot];
-                  const isLegal = tok && player?.id === currentPlayerId && legalIds.includes(tok.id);
+                  const isLegal =
+                    tok &&
+                    player?.id === currentPlayerId &&
+                    legalIds.includes(tok.id);
                   return (
-                    <div key={slot} className="aspect-square bg-black/20 rounded-full flex items-center justify-center">
+                    <div
+                      key={slot}
+                      className="aspect-square bg-black/20 rounded-full flex items-center justify-center"
+                    >
                       {tok && (
                         <motion.button
                           whileHover={isLegal ? { scale: 1.2 } : {}}
                           onClick={() => isLegal && onMove(tok.id)}
                           className={cn(
                             "token-3d w-full h-full rounded-full text-white font-bold text-xs shadow-lg transition-all",
-                            color === 'red' ? 'bg-red-500' : color === 'green' ? 'bg-green-500' : color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
-                            isLegal && "ring-4 ring-white animate-pulse scale-110"
+                            color === "red"
+                              ? "bg-red-500"
+                              : color === "green"
+                                ? "bg-green-500"
+                                : color === "yellow"
+                                  ? "bg-yellow-500"
+                                  : "bg-blue-500",
+                            isLegal &&
+                              "ring-4 ring-white animate-pulse scale-110",
                           )}
                         >
                           {tok.id + 1}
@@ -359,14 +529,23 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
               key={cellId}
               className={cn(
                 "absolute w-[6.66%] h-[6.66%] border border-slate-700/30 flex items-center justify-center",
-                isSafe && "bg-white/5"
+                isSafe && "bg-white/5",
               )}
-              style={{ left: `${coord[0] * 100 / 15}%`, top: `${coord[1] * 100 / 15}%` }}
+              style={{
+                left: `${(coord[0] * 100) / 15}%`,
+                top: `${(coord[1] * 100) / 15}%`,
+              }}
             >
-              {isSafe && <div className="absolute inset-0 flex items-center justify-center text-white/10 text-xs">⭐</div>}
+              {isSafe && (
+                <div className="absolute inset-0 flex items-center justify-center text-white/10 text-xs">
+                  ⭐
+                </div>
+              )}
               <div className="flex flex-wrap gap-0.5 justify-center items-center">
                 {tokensOnCell.map(({ player, token }) => {
-                  const isLegal = player.id === currentPlayerId && legalIds.includes(token.id);
+                  const isLegal =
+                    player.id === currentPlayerId &&
+                    legalIds.includes(token.id);
                   return (
                     <motion.button
                       key={`${player.id}-${token.id}`}
@@ -374,8 +553,14 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
                       onClick={() => isLegal && onMove(token.id)}
                       className={cn(
                         "token-3d w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
-                        player.color === 'red' ? 'bg-red-500' : player.color === 'green' ? 'bg-green-500' : player.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
-                        isLegal && "ring-2 ring-white animate-pulse scale-125"
+                        player.color === "red"
+                          ? "bg-red-500"
+                          : player.color === "green"
+                            ? "bg-green-500"
+                            : player.color === "yellow"
+                              ? "bg-yellow-500"
+                              : "bg-blue-500",
+                        isLegal && "ring-2 ring-white animate-pulse scale-125",
                       )}
                     >
                       {token.id + 1}
@@ -395,11 +580,16 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
               <div
                 key={`${color}-${pos}`}
                 className="absolute w-[6.66%] h-[6.66%] border border-slate-700/30 flex items-center justify-center bg-white/5"
-                style={{ left: `${HOME_LANE_COORDS[color][pos - 53][0] * 100 / 15}%`, top: `${HOME_LANE_COORDS[color][pos - 53][1] * 100 / 15}%` }}
+                style={{
+                  left: `${(HOME_LANE_COORDS[color][pos - 53][0] * 100) / 15}%`,
+                  top: `${(HOME_LANE_COORDS[color][pos - 53][1] * 100) / 15}%`,
+                }}
               >
                 <div className="flex flex-wrap gap-0.5 justify-center items-center">
                   {list.map(({ player, token }) => {
-                    const isLegal = player.id === currentPlayerId && legalIds.includes(token.id);
+                    const isLegal =
+                      player.id === currentPlayerId &&
+                      legalIds.includes(token.id);
                     return (
                       <motion.button
                         key={`${player.id}-${token.id}`}
@@ -407,8 +597,15 @@ function Board({ players, currentPlayerId, dice, legalIds, onMove }: { players: 
                         onClick={() => isLegal && onMove(token.id)}
                         className={cn(
                           "token-3d w-3 h-3 rounded-full text-[8px] text-white font-bold shadow-sm transition-all",
-                          player.color === 'red' ? 'bg-red-500' : player.color === 'green' ? 'bg-green-500' : player.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
-                          isLegal && "ring-2 ring-white animate-pulse scale-125"
+                          player.color === "red"
+                            ? "bg-red-500"
+                            : player.color === "green"
+                              ? "bg-green-500"
+                              : player.color === "yellow"
+                                ? "bg-yellow-500"
+                                : "bg-blue-500",
+                          isLegal &&
+                            "ring-2 ring-white animate-pulse scale-125",
                         )}
                       >
                         {token.id + 1}
@@ -432,7 +629,10 @@ function BotGame({ onExit }: { onExit: () => void }) {
   const isMyTurn = gs.currentPlayerId === HUMAN_ID;
   const isBot = BOT_IDS.includes(gs.currentPlayerId ?? "");
   const me = gs.players.find((p) => p.id === HUMAN_ID)!;
-  const legal = useMemo(() => (isMyTurn && gs.dice ? legalTokenIds(me, gs.dice) : []), [isMyTurn, me, gs.dice]);
+  const legal = useMemo(
+    () => (isMyTurn && gs.dice ? legalTokenIds(me, gs.dice) : []),
+    [isMyTurn, me, gs.dice],
+  );
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -451,16 +651,42 @@ function BotGame({ onExit }: { onExit: () => void }) {
     }, 700);
   }, [isMyTurn, gs.dice, rolling]);
 
+  // Human auto-advance when no legal moves available
+  useEffect(() => {
+    if (
+      !isMyTurn ||
+      gs.dice === null ||
+      legal.length > 0 ||
+      phase === "finished"
+    )
+      return;
+    const t = setTimeout(() => {
+      dispatch({ type: "ADVANCE" });
+    }, 1100);
+    return () => clearTimeout(t);
+  }, [isMyTurn, gs.dice, legal.length, phase]);
+
   useEffect(() => {
     if (!isBot || phase === "finished") return;
-    const delay = 900 + Math.random() * 600;
     if (gs.dice === null) {
-      const t = setTimeout(() => {
-        const result = Math.floor(Math.random() * 6) + 1;
-        dispatch({ type: "ROLL", result });
-      }, delay);
-      return () => clearTimeout(t);
+      let rollTimeout: NodeJS.Timeout;
+      const thinkTimeout = setTimeout(
+        () => {
+          setRolling(true);
+          rollTimeout = setTimeout(() => {
+            setRolling(false);
+            const result = Math.floor(Math.random() * 6) + 1;
+            dispatch({ type: "ROLL", result });
+          }, 450);
+        },
+        700 + Math.random() * 300,
+      );
+      return () => {
+        clearTimeout(thinkTimeout);
+        if (rollTimeout) clearTimeout(rollTimeout);
+      };
     } else {
+      const delay = 850 + Math.random() * 350;
       const t = setTimeout(() => {
         const tokenId = pickBotToken(gs, gs.currentPlayerId!, gs.dice!);
         if (tokenId === -1) dispatch({ type: "ADVANCE" });
@@ -471,37 +697,67 @@ function BotGame({ onExit }: { onExit: () => void }) {
   }, [isBot, gs.currentPlayerId, gs.dice, phase]);
 
   const currentPlayer = gs.players.find((p) => p.id === gs.currentPlayerId);
-  const winner = phase === "finished" ? gs.players.find((p) => p.id === gs.winnerId) : null;
+  const winner =
+    phase === "finished" ? gs.players.find((p) => p.id === gs.winnerId) : null;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 flex flex-col items-center">
       <header className="w-full max-w-6xl flex justify-between items-center mb-8">
-        <button onClick={onExit} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm">
+        <button
+          onClick={onExit}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+        >
           <LogOut size={16} /> Exit Game
         </button>
         <div className="flex items-center gap-3 text-2xl font-black tracking-tighter">
-          <span className="text-4xl">🎲</span> LUDO<span className="text-blue-500">FRIENDS</span>
+          <span className="text-4xl">🎲</span> LUDO
+          <span className="text-blue-500">FRIENDS</span>
         </div>
         <div className="flex items-center gap-4 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
-          <div className={cn("w-3 h-3 rounded-full animate-pulse", currentPlayer?.color === 'red' ? 'bg-red-500' : currentPlayer?.color === 'green' ? 'bg-green-500' : currentPlayer?.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500')} />
-          <span className="text-sm font-medium">{isMyTurn ? "Your Turn" : `${currentPlayer?.name}'s Turn`}</span>
+          <div
+            className={cn(
+              "w-3 h-3 rounded-full animate-pulse",
+              currentPlayer?.color === "red"
+                ? "bg-red-500"
+                : currentPlayer?.color === "green"
+                  ? "bg-green-500"
+                  : currentPlayer?.color === "yellow"
+                    ? "bg-yellow-500"
+                    : "bg-blue-500",
+            )}
+          />
+          <span className="text-sm font-medium">
+            {isMyTurn ? "Your Turn" : `${currentPlayer?.name}'s Turn`}
+          </span>
         </div>
       </header>
 
       <AnimatePresence>
         {winner && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
           >
             <div className="bg-slate-900 p-12 rounded-3xl border-4 border-yellow-500 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)]">
-              <Trophy size={80} className="mx-auto text-yellow-500 mb-4 animate-bounce" />
-              <h2 className="text-5xl font-black mb-2">{winner?.id === HUMAN_ID ? "YOU WIN!" : `${winner?.name} WINS!`}</h2>
-              <p className="text-slate-400 mb-8 text-lg">A legendary victory! 🎲</p>
-              <button onClick={() => {
-                window.localStorage.removeItem(OFFLINE_STORAGE_KEY);
-                onExit();
-              }} className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all transform hover:scale-105">
+              <Trophy
+                size={80}
+                className="mx-auto text-yellow-500 mb-4 animate-bounce"
+              />
+              <h2 className="text-5xl font-black mb-2">
+                {winner?.id === HUMAN_ID ? "YOU WIN!" : `${winner?.name} WINS!`}
+              </h2>
+              <p className="text-slate-400 mb-8 text-lg">
+                A legendary victory! 🎲
+              </p>
+              <button
+                onClick={() => {
+                  window.localStorage.removeItem(OFFLINE_STORAGE_KEY);
+                  onExit();
+                }}
+                className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all transform hover:scale-105"
+              >
                 New Game
               </button>
             </div>
@@ -516,7 +772,9 @@ function BotGame({ onExit }: { onExit: () => void }) {
             currentPlayerId={gs.currentPlayerId}
             dice={gs.dice}
             legalIds={legal}
-            onMove={(id) => dispatch({ type: "MOVE", playerId: HUMAN_ID, tokenId: id })}
+            onMove={(id) =>
+              dispatch({ type: "MOVE", playerId: HUMAN_ID, tokenId: id })
+            }
           />
         </div>
 
@@ -534,8 +792,22 @@ function BotGame({ onExit }: { onExit: () => void }) {
               />
               <p className="text-center text-slate-400 italic">
                 {isMyTurn
-                  ? gs.dice ? (legal.length > 0 ? "Select a pulsing token to move!" : "No legal moves, skipping...") : "Roll the dice to start!"
-                  : `${currentPlayer?.name} is thinking...`}
+                  ? gs.dice
+                    ? legal.length > 0
+                      ? "Select a pulsing token to move!"
+                      : "No legal moves, skipping..."
+                    : rolling
+                      ? "Rolling..."
+                      : "Roll the dice to start!"
+                  : rolling
+                    ? `${currentPlayer?.name} is rolling...`
+                    : gs.dice
+                      ? `${currentPlayer?.name} rolled ${gs.dice}! ${
+                          legalTokenIds(currentPlayer!, gs.dice).length === 0
+                            ? "No moves, skipping..."
+                            : "Moving..."
+                        }`
+                      : `${currentPlayer?.name} is thinking...`}
               </p>
             </div>
           </div>
@@ -546,7 +818,12 @@ function BotGame({ onExit }: { onExit: () => void }) {
             </div>
             <div className="space-y-3">
               {gs.players.map((p) => (
-                <PlayerCard key={p.id} player={p} active={p.id === gs.currentPlayerId} isYou={p.id === HUMAN_ID} />
+                <PlayerCard
+                  key={p.id}
+                  player={p}
+                  active={p.id === gs.currentPlayerId}
+                  isYou={p.id === HUMAN_ID}
+                />
               ))}
             </div>
           </div>
@@ -557,11 +834,16 @@ function BotGame({ onExit }: { onExit: () => void }) {
 }
 
 function MultiplayerEntry({ onExit }: { onExit: () => void }) {
-  const [socket] = useState<AppSocket>(() => io(SERVER, { autoConnect: false }));
+  const [socket] = useState<AppSocket>(() =>
+    io(SERVER, { autoConnect: false }),
+  );
   const [sessionId] = useState(() => {
     const key = "ludo-friends-session";
     let saved = window.localStorage.getItem(key);
-    if (!saved) { saved = crypto.randomUUID(); window.localStorage.setItem(key, saved); }
+    if (!saved) {
+      saved = crypto.randomUUID();
+      window.localStorage.setItem(key, saved);
+    }
     return saved;
   });
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
@@ -584,12 +866,16 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     }
     socket.on("snapshot", setSnapshot);
     const onConnect = () => {
-      setConnection("Connected. Restoring your room…"); setError("");
+      setConnection("Connected. Restoring your room…");
+      setError("");
       socket.emit("resumeSession", { sessionId }, (result) => {
-        setConnection(result.ok ? "Room restored." : "Connected. Create or join a room.");
+        setConnection(
+          result.ok ? "Room restored." : "Connected. Create or join a room.",
+        );
       });
     };
-    const onConnectError = () => setConnection("Server unavailable. Check backend.");
+    const onConnectError = () =>
+      setConnection("Server unavailable. Check backend.");
     const onDisconnect = () => setConnection("Connection lost. Reconnecting…");
     socket.on("connect", onConnect);
     socket.on("connect_error", onConnectError);
@@ -604,7 +890,13 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     if (!snapshot?.state.turnDeadline) return;
-    const update = () => setSeconds(Math.max(0, Math.ceil((snapshot.state.turnDeadline! - Date.now()) / 1000)));
+    const update = () =>
+      setSeconds(
+        Math.max(
+          0,
+          Math.ceil((snapshot.state.turnDeadline! - Date.now()) / 1000),
+        ),
+      );
     update();
     const t = window.setInterval(update, 250);
     return () => clearInterval(t);
@@ -614,14 +906,16 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     if (busy || !socket.connected) return;
     setBusy(true);
     socket.emit("createRoom", { name, sessionId, turnSeconds: 20 }, (r) => {
-      setBusy(false); if (!r.ok) setError(r.error.message);
+      setBusy(false);
+      if (!r.ok) setError(r.error.message);
     });
   };
   const join = () => {
     if (busy || !socket.connected) return;
     setBusy(true);
     socket.emit("joinRoom", { code, name, sessionId }, (r) => {
-      setBusy(false); if (!r.ok) setError(r.error.message);
+      setBusy(false);
+      if (!r.ok) setError(r.error.message);
     });
   };
 
@@ -634,46 +928,69 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl relative">
-          <button onClick={onExit} className="absolute -top-12 left-0 text-slate-400 hover:text-white flex items-center gap-2 text-sm">
+          <button
+            onClick={onExit}
+            className="absolute -top-12 left-0 text-slate-400 hover:text-white flex items-center gap-2 text-sm"
+          >
             <LogOut size={14} /> Back to Menu
           </button>
           <div className="text-center mb-8">
-            <p className="text-blue-500 font-bold text-xs uppercase tracking-widest mb-2">Multiplayer</p>
+            <p className="text-blue-500 font-bold text-xs uppercase tracking-widest mb-2">
+              Multiplayer
+            </p>
             <h2 className="text-3xl font-black">Join the Race</h2>
           </div>
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase ml-1">Your Name</label>
+              <label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                Your Name
+              </label>
               <input
-                value={name} onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Maya" className="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none transition-all"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Maya"
+                className="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none transition-all"
               />
             </div>
             <button
-              disabled={!name.trim() || busy || !socket.connected} onClick={create}
+              disabled={!name.trim() || busy || !socket.connected}
+              onClick={create}
               className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 font-bold rounded-xl transition-all transform hover:scale-[1.02]"
             >
               🏠 Create a Room
             </button>
             <div className="flex items-center gap-4 py-2">
               <div className="h-px bg-slate-800 flex-1" />
-              <span className="text-xs text-slate-600 font-bold uppercase">or join</span>
+              <span className="text-xs text-slate-600 font-bold uppercase">
+                or join
+              </span>
               <div className="h-px bg-slate-800 flex-1" />
             </div>
             <div className="flex gap-2">
               <input
-                value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="ABC123" className="flex-1 bg-slate-800 border border-slate-700 p-3 rounded-xl uppercase font-mono tracking-widest outline-none"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="ABC123"
+                className="flex-1 bg-slate-800 border border-slate-700 p-3 rounded-xl uppercase font-mono tracking-widest outline-none"
               />
               <button
-                disabled={!name.trim() || code.length !== 6 || busy || !socket.connected} onClick={join}
+                disabled={
+                  !name.trim() || code.length !== 6 || busy || !socket.connected
+                }
+                onClick={join}
                 className="px-6 py-3 bg-slate-700 hover:bg-slate-600 font-bold rounded-xl transition-all"
               >
                 Join
               </button>
             </div>
-            {error && <p className="text-red-400 text-center text-sm">{error}</p>}
-            {connection && <p className="text-slate-500 text-center text-xs italic">{connection}</p>}
+            {error && (
+              <p className="text-red-400 text-center text-sm">{error}</p>
+            )}
+            {connection && (
+              <p className="text-slate-500 text-center text-xs italic">
+                {connection}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -681,65 +998,119 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
   }
 
   if (snapshot.state.phase === "lobby") {
-    const choose = (color: Color) => socket.emit("selectColor", { color }, (r) => { if (!r.ok) setError(r.error.message); });
+    const choose = (color: Color) =>
+      socket.emit("selectColor", { color }, (r) => {
+        if (!r.ok) setError(r.error.message);
+      });
     return (
       <div className="min-h-screen bg-slate-950 p-4 md:p-8 flex flex-col items-center">
         <header className="w-full max-w-6xl flex justify-between items-center mb-12">
-          <button onClick={onExit} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm">
+          <button
+            onClick={onExit}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+          >
             <LogOut size={16} /> Exit Lobby
           </button>
           <div className="text-center">
-            <span className="text-xs font-bold text-slate-500 uppercase block tracking-widest">Room Code</span>
-            <strong className="text-2xl font-black tracking-widest text-blue-400">{snapshot.code}</strong>
+            <span className="text-xs font-bold text-slate-500 uppercase block tracking-widest">
+              Room Code
+            </span>
+            <strong className="text-2xl font-black tracking-widest text-blue-400">
+              {snapshot.code}
+            </strong>
           </div>
-          <button onClick={() => navigator.clipboard.writeText(snapshot.code)} className="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm">📋 Copy</button>
+          <button
+            onClick={() => navigator.clipboard.writeText(snapshot.code)}
+            className="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+          >
+            📋 Copy
+          </button>
         </header>
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl">
           <div className="text-center mb-8">
-            <p className="text-xs font-bold text-slate-500 uppercase mb-1">Lobby • {snapshot.state.players.length}/4 Players</p>
+            <p className="text-xs font-bold text-slate-500 uppercase mb-1">
+              Lobby • {snapshot.state.players.length}/4 Players
+            </p>
             <h2 className="text-3xl font-black">Choose Color</h2>
           </div>
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-3">
               {snapshot.state.players.map((p) => (
-                <PlayerCard key={p.id} player={p} active={false} isYou={p.id === me?.id} showReady compact />
+                <PlayerCard
+                  key={p.id}
+                  player={p}
+                  active={false}
+                  isYou={p.id === me?.id}
+                  showReady
+                  compact
+                />
               ))}
             </div>
             <div className="grid grid-cols-4 gap-3">
               {COLORS.map((color) => (
                 <button
                   key={color}
-                  disabled={snapshot.state.players.some(p => p.color === color && p.id !== me?.id)}
+                  disabled={snapshot.state.players.some(
+                    (p) => p.color === color && p.id !== me?.id,
+                  )}
                   onClick={() => choose(color)}
                   className={cn(
                     "h-12 rounded-xl transition-all transform hover:scale-110",
-                    color === 'red' ? 'bg-red-500' : color === 'green' ? 'bg-green-500' : color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500',
-                    me?.color === color ? "ring-4 ring-white scale-110" : "opacity-60",
-                    "disabled:opacity-20 disabled:cursor-not-allowed"
+                    color === "red"
+                      ? "bg-red-500"
+                      : color === "green"
+                        ? "bg-green-500"
+                        : color === "yellow"
+                          ? "bg-yellow-500"
+                          : "bg-blue-500",
+                    me?.color === color
+                      ? "ring-4 ring-white scale-110"
+                      : "opacity-60",
+                    "disabled:opacity-20 disabled:cursor-not-allowed",
                   )}
                 />
               ))}
             </div>
             <button
-              onClick={() => socket.emit("setReady", { ready: !me?.ready }, (r) => { if (!r.ok) setError(r.error.message); })}
+              onClick={() =>
+                socket.emit("setReady", { ready: !me?.ready }, (r) => {
+                  if (!r.ok) setError(r.error.message);
+                })
+              }
               className={cn(
                 "w-full py-4 font-bold rounded-2xl transition-all transform hover:scale-[1.02]",
-                me?.ready ? "bg-green-600 hover:bg-green-500" : "bg-blue-600 hover:bg-blue-500"
+                me?.ready
+                  ? "bg-green-600 hover:bg-green-500"
+                  : "bg-blue-600 hover:bg-blue-500",
               )}
             >
               {me?.ready ? "✓ Ready!" : "Ready Up"}
             </button>
             {me?.id === snapshot.hostId && (
               <button
-                disabled={snapshot.state.players.length < 2 || snapshot.state.players.some(p => !p.ready || !p.connected)}
-                onClick={() => socket.emit("startGame", (r) => { if (!r.ok) setError(r.error.message); })}
+                disabled={
+                  snapshot.state.players.length < 2 ||
+                  snapshot.state.players.some((p) => !p.ready || !p.connected)
+                }
+                onClick={() =>
+                  socket.emit("startGame", (r) => {
+                    if (!r.ok) setError(r.error.message);
+                  })
+                }
                 className="w-full py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl disabled:opacity-50 transition-all"
               >
                 Start Game
               </button>
             )}
-            <button onClick={() => socket.emit("leaveRoom", () => onExit())} className="w-full py-2 text-slate-500 text-sm hover:text-white transition-colors">Leave Room</button>
-            {error && <p className="text-red-400 text-center text-sm">{error}</p>}
+            <button
+              onClick={() => socket.emit("leaveRoom", () => onExit())}
+              className="w-full py-2 text-slate-500 text-sm hover:text-white transition-colors"
+            >
+              Leave Room
+            </button>
+            {error && (
+              <p className="text-red-400 text-center text-sm">{error}</p>
+            )}
           </div>
         </div>
       </div>
@@ -752,27 +1123,40 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
     setRolling(true);
     setTimeout(() => {
       setRolling(false);
-      socket.emit("rollDice", (r) => { if (!r.ok) setError(r.error.message); });
+      socket.emit("rollDice", (r) => {
+        if (!r.ok) setError(r.error.message);
+      });
     }, 700);
   };
 
-  const currentPlayer = snapshot.state.players.find(p => p.id === snapshot.state.currentPlayerId);
+  const currentPlayer = snapshot.state.players.find(
+    (p) => p.id === snapshot.state.currentPlayerId,
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 flex flex-col items-center">
       <header className="w-full max-w-6xl flex justify-between items-center mb-8">
-        <button onClick={onExit} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm">
+        <button
+          onClick={onExit}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors text-sm"
+        >
           <LogOut size={16} /> Exit
         </button>
         <div className="flex items-center gap-3 text-2xl font-black tracking-tighter">
-          <span className="text-4xl">🎲</span> LUDO<span className="text-blue-500">FRIENDS</span>
+          <span className="text-4xl">🎲</span> LUDO
+          <span className="text-blue-500">FRIENDS</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="bg-slate-800 px-4 py-2 rounded-full border border-slate-700 flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-500 uppercase">Timer</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">
+              Timer
+            </span>
             <strong className="text-xl font-mono">{seconds}s</strong>
           </div>
-          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors">
+          <button
+            onClick={() => setSoundOn(!soundOn)}
+            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"
+          >
             {soundOn ? "🔊" : "🔇"}
           </button>
         </div>
@@ -782,7 +1166,9 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
         <AnimatePresence>
           {toast && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-xl"
             >
               {toast}
@@ -794,14 +1180,33 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
       {snapshot.state.winnerId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 p-12 rounded-3xl border-4 border-yellow-500 text-center shadow-2xl">
-            <Trophy size={80} className="mx-auto text-yellow-500 mb-4 animate-bounce" />
+            <Trophy
+              size={80}
+              className="mx-auto text-yellow-500 mb-4 animate-bounce"
+            />
             <h2 className="text-5xl font-black mb-4">
-              {snapshot.state.winnerId === me?.id ? "You Win!" : `${snapshot.state.players.find(p => p.id === snapshot.state.winnerId)?.name} Wins!`}
+              {snapshot.state.winnerId === me?.id
+                ? "You Win!"
+                : `${snapshot.state.players.find((p) => p.id === snapshot.state.winnerId)?.name} Wins!`}
             </h2>
             <div className="flex gap-4 justify-center">
-              <button onClick={() => socket.emit("leaveRoom", () => onExit())} className="px-8 py-4 bg-slate-800 rounded-2xl font-bold hover:bg-slate-700 transition-all">Leave</button>
+              <button
+                onClick={() => socket.emit("leaveRoom", () => onExit())}
+                className="px-8 py-4 bg-slate-800 rounded-2xl font-bold hover:bg-slate-700 transition-all"
+              >
+                Leave
+              </button>
               {me?.id === snapshot.hostId && (
-                <button onClick={() => socket.emit("playAgain", (r) => { if (!r.ok) setError(r.error.message); })} className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all">Play Again</button>
+                <button
+                  onClick={() =>
+                    socket.emit("playAgain", (r) => {
+                      if (!r.ok) setError(r.error.message);
+                    })
+                  }
+                  className="px-8 py-4 bg-yellow-500 text-slate-950 font-bold rounded-2xl hover:bg-yellow-400 transition-all"
+                >
+                  Play Again
+                </button>
               )}
             </div>
           </div>
@@ -815,7 +1220,11 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
             currentPlayerId={snapshot.state.currentPlayerId}
             dice={snapshot.state.dice}
             legalIds={legal}
-            onMove={(tokenId) => socket.emit("moveToken", { tokenId }, (r) => { if (!r.ok) setError(r.error.message); })}
+            onMove={(tokenId) =>
+              socket.emit("moveToken", { tokenId }, (r) => {
+                if (!r.ok) setError(r.error.message);
+              })
+            }
           />
         </div>
         <aside className="lg:col-span-5 space-y-6">
@@ -832,7 +1241,9 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
               />
               <p className="text-center text-slate-400 italic">
                 {current
-                  ? snapshot.state.dice ? "Select a pulsing token!" : "Roll the dice to start!"
+                  ? snapshot.state.dice
+                    ? "Select a pulsing token!"
+                    : "Roll the dice to start!"
                   : `${currentPlayer?.name} is rolling...`}
               </p>
             </div>
@@ -859,9 +1270,11 @@ function MultiplayerEntry({ onExit }: { onExit: () => void }) {
 }
 
 function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
-  const hasSavedOfflineGame = typeof window !== "undefined" && Boolean(
-    decodeOfflineSession(window.localStorage.getItem(OFFLINE_STORAGE_KEY)),
-  );
+  const hasSavedOfflineGame =
+    typeof window !== "undefined" &&
+    Boolean(
+      decodeOfflineSession(window.localStorage.getItem(OFFLINE_STORAGE_KEY)),
+    );
 
   return (
     <div className="landing-page">
@@ -869,51 +1282,106 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
       <div className="landing-glow landing-glow-two" />
       <div className="landing-shell">
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           className="landing-hero"
         >
           <div className="landing-kicker">
             <span className="landing-mark">LF</span>
             <span>Ludo Friends</span>
-            <span className="landing-live"><span /> Live rooms</span>
+            <span className="landing-live">
+              <span /> Live rooms
+            </span>
           </div>
           <h1>
-            A small board.<br /><span>A lot of rivalry.</span>
+            A small board.
+            <br />
+            <span>A lot of rivalry.</span>
           </h1>
-          <p className="landing-lede">A tactile Ludo room for quick matches with friends — or a reliable game when the Wi‑Fi disappears.</p>
+          <p className="landing-lede">
+            A tactile Ludo room for quick matches with friends — or a reliable
+            game when the Wi‑Fi disappears.
+          </p>
           <div className="landing-stats">
-            <span><strong>4</strong> players</span>
-            <span><strong>1</strong> shared board</span>
-            <span><strong>0</strong> accounts</span>
+            <span>
+              <strong>4</strong> players
+            </span>
+            <span>
+              <strong>1</strong> shared board
+            </span>
+            <span>
+              <strong>0</strong> accounts
+            </span>
           </div>
         </motion.div>
 
         <div className="landing-options">
           <motion.button
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => onSelect("bot")}
             className="landing-card landing-card-light group"
           >
-            <div className="landing-card-top"><span className="landing-icon">♟</span><span className="landing-pill">{hasSavedOfflineGame ? "Saved locally" : "No account needed"}</span></div>
-            <div><h2>{hasSavedOfflineGame ? "Resume offline game" : "Play offline"}</h2><p>Three thoughtful opponents, deterministic rules, and a match that stays on this device.</p></div>
-            <span className="landing-action">{hasSavedOfflineGame ? "Continue match" : "Start solo"} <span>→</span></span>
+            <div className="landing-card-top">
+              <span className="landing-icon">♟</span>
+              <span className="landing-pill">
+                {hasSavedOfflineGame ? "Saved locally" : "No account needed"}
+              </span>
+            </div>
+            <div>
+              <h2>
+                {hasSavedOfflineGame ? "Resume offline game" : "Play offline"}
+              </h2>
+              <p>
+                Three thoughtful opponents, deterministic rules, and a match
+                that stays on this device.
+              </p>
+            </div>
+            <span className="landing-action">
+              {hasSavedOfflineGame ? "Continue match" : "Start solo"}{" "}
+              <span>→</span>
+            </span>
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => onSelect("multiplayer")}
             className="landing-card landing-card-dark group"
           >
-            <div className="landing-card-top"><span className="landing-icon">◎</span><span className="landing-pill">2–4 players</span></div>
-            <div><h2>Make a room</h2><p>Share a short code, choose your colors, and play with the server keeping every move fair.</p></div>
-            <span className="landing-action">Create or join <span>→</span></span>
+            <div className="landing-card-top">
+              <span className="landing-icon">◎</span>
+              <span className="landing-pill">2–4 players</span>
+            </div>
+            <div>
+              <h2>Make a room</h2>
+              <p>
+                Share a short code, choose your colors, and play with the server
+                keeping every move fair.
+              </p>
+            </div>
+            <span className="landing-action">
+              Create or join <span>→</span>
+            </span>
           </motion.button>
         </div>
 
         <div className="landing-rules">
-          <span>4 tokens to finish</span><span>Six to leave yard</span><span>Capture to reset</span>
+          <span>4 tokens to finish</span>
+          <span>Six to leave yard</span>
+          <span>Capture to reset</span>
         </div>
-        {hasSavedOfflineGame && <button onClick={() => { window.localStorage.removeItem(OFFLINE_STORAGE_KEY); window.location.reload(); }} className="landing-forget">Forget saved offline game</button>}
+        {hasSavedOfflineGame && (
+          <button
+            onClick={() => {
+              window.localStorage.removeItem(OFFLINE_STORAGE_KEY);
+              window.location.reload();
+            }}
+            className="landing-forget"
+          >
+            Forget saved offline game
+          </button>
+        )}
       </div>
     </div>
   );
@@ -922,6 +1390,7 @@ function Menu({ onSelect }: { onSelect: (mode: Mode) => void }) {
 export default function App() {
   const [mode, setMode] = useState<Mode>("menu");
   if (mode === "bot") return <BotGame onExit={() => setMode("menu")} />;
-  if (mode === "multiplayer") return <MultiplayerEntry onExit={() => setMode("menu")} />;
+  if (mode === "multiplayer")
+    return <MultiplayerEntry onExit={() => setMode("menu")} />;
   return <Menu onSelect={setMode} />;
 }
